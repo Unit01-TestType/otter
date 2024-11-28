@@ -6,7 +6,7 @@ This is based on boiler plate provided by MinimalGS from Leif Linse.
 
 import os
 
-def version_info(outdir, version):
+def build_version(outdir, version):
     '''
     This function creates info.nut for a custom map gamescript
 
@@ -22,6 +22,8 @@ def version_info(outdir, version):
     None.
 
     '''
+    
+    print('Building version.nut...')
     
     ## Input error handling
     if not os.path.isdir(outdir):
@@ -43,7 +45,4 @@ def version_info(outdir, version):
     
     version_file.close()
     
-    
-    
-version_info(outdir = r'C:\Users\Marc\Documents\OpenTTD\game\CA-townplacer2',
-             version = 2)
+    print('Done.')

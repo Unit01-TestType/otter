@@ -39,6 +39,8 @@ def build_info(outdir, author, name, short_name, description, version='SELF_VERS
 
     '''
     
+    print('Building info.nut...')
+    
     ## Input error handling
     if not os.path.isdir(outdir):
         raise Exception('outdir must be valid directory.')
@@ -97,16 +99,7 @@ def build_info(outdir, author, name, short_name, description, version='SELF_VERS
     info_file.close()
     
     
+    print('Done.')
     
-# build_info(outdir = r'C:\Users\Marc\Documents\OpenTTD\game\CA-townplacer2',
-#            author = 'test_author',
-#            name = 'test_name',
-#            short_name = 'TEST',
-#            description = 'test description',
-#            version = 'SELF_VERSION',
-#            date = '01-01-2024',
-#            API_version='1.11',
-#            url = 'test_url',
-#            comment = 'This is a test comment.\nThis is the second line.\nThis is the third line.\n')
     
     
