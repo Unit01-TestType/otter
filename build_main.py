@@ -5,8 +5,10 @@ This is based on boiler plate provided by MinimalGS from Leif Linse.
 The boiler plate was editted to include custom functions to for adding towns and industries to user-specified locations.
 
 TODO:
-    - move add towns and add industry to their own package functions; call them at the right place in build_main
     - add more options to input data for towns and industry (e.g. dictionary)
+    
+    - add options to add place labels
+
 '''
 
 
@@ -15,7 +17,7 @@ import pandas as pd
 
 
 #### Main function to build main.nut
-def build_main(outdir, towns_code, industry_code):
+def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
     '''
     This function builds main.nut file for a custom map gamescript. 
 
@@ -27,6 +29,8 @@ def build_main(outdir, towns_code, industry_code):
         A list containing formatted string to add town line code.
     industry_code : list
         A list containing formatted string to add industry line code.
+    canal_code : list
+        A list containing formatted string to add canal line code.
 
     Returns
     -------
@@ -135,15 +139,21 @@ def build_main(outdir, towns_code, industry_code):
     main_file.writelines(l1)
     
     #### Add towns
-    main_file.writelines(towns_code)
-    
-    
-    main_file.write('\n\tprint("Finished adding towns. Adding industries.")\n\n')
+    if towns_code is not None:
+        main_file.writelines(towns_code)
+        main_file.write('\n\tprint("Finished adding towns.")\n\n')
     
     
     #### Add industries
-    main_file.writelines(industry_code)
-
+    if industry_code is not None:
+        main_file.writelines(industry_code)
+        main_file.write('\n\tprint("Finished adding industries.")\n\n')
+        
+    
+    #### Add canals
+    if canal_code is not None:
+        main_file.writelines(canal_code)
+        main_file.write('\n\tprint("Finished adding canals.")\n\n')
 
     
     #### End of main script loop
@@ -309,6 +319,58 @@ def build_main(outdir, towns_code, industry_code):
         	
         	 '\treturn success;\n',
          '}\n\n'
+         
+         
+         #### PlaceCanal Function
+         '// function for placing canal like river and lake at elevation\n',
+         'function Mainclass::PlaceCanal(x, y) {\n\n',
+        	
+        	 '\tGSCompanyMode.IsDeity();\n',
+        	 '\tlocal companyidx = 0;\n',
+        	 '\tlocal bank_blance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n\n',
+        	
+        	 '\tlocal canal_success = false;\n',
+        	 '\tlocal lock_success = false;\n',
+        	 '\tlocal cur_tile = GSMap.GetTileIndex(x,y);\n',
+        	
+        	 '\tcanal_success = GSMarine.BuildCanal(cur_tile);\n',
+        	 '\tif (!canal_success) {\n',
+        	 	'\t\tlock_success = GSMarin.BuildLock(cur_tile);\n',
+        	 	'\t\tif (!lock_success) {\n',
+        			'\t\t\tprint(">Could not build canal or lock at " + x + " " +y)\n',
+        		'\t\t}\n',
+        	 '\t}\n\n',
+        	
+         '}\n\n',
+         
+        '// function for leveling tiles\n',
+        '// used to help level terrain to place industries\n',
+        'function MainClass::LevelTiles(x1, y1, x2, y2) {\n\n',
+        	
+        	'\t// x1,y1 is the upper left corner\n',
+        	'\t// x2,y2 is the lower right corner\n\n',
+        	
+        	'\tprint("Leveling tiles...");\n\n',
+        	
+        	'\tGSCompanyMode.IsDeity();\n',
+        	'\tlocal companyidx = 0;\n',
+        	'\tlocal bank_blance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n',
+        	'\tlocal start_tile = GSMap.GetTileIndex(x1, y1);\n',
+        	'\tlocal end_tile = GSMap.GetTileIndex(x2, y2);\n\n',
+        	
+        	'\tlocal success = false;\n',
+        	
+        	'\tsuccess = GSTile.LevelTiles(start_tile, end_tile);\n\n',
+        	
+        	'\tif (success) {\n',
+        		'\t\tprint(">Leveling succeeded.");\n',
+        	'\t} else {\n',
+        		'\t\tprint(">Leveling failed.");\n',
+        	'\t}\n\n',
+        	
+        	'\treturn success;\n\n',
+        	
+        '}'
          
          ]
     
@@ -578,9 +640,10 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
 
 #### Create industries code
 
-def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_header='Name',ind_type_header='Type'):
+def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_header='Name',ind_type_header='Type',
+                        trylevel_header='Level', level_x2_header='Level_down', level_y2_header='Level_across'):
     '''
-    
+    This function helps build the squirrel code function calls for TryIndustry to build industries.
 
     Parameters
     ----------
@@ -595,7 +658,13 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
         Name or index of the industry name field header in the dataframe, xlsx, or CSV file. The default is 'Name'.
     ind_type_header : str, optional
         Name or index of the industry type field header in the dataframe, xlsx, or CSV file. The default is 'Type'.
-
+    trylevel_header : str, optional
+        Name or index of the header containing the flag for leveling in the dataframe, xlsx, or CSV file. The defeault is 'Level'.
+    level_x2_header : str, optional
+        Name or index of the header containing the number of tiles down for leveling in the dataframe, xlsx, or CSV file. The defeault is 'Level'.
+    level_y2_header : str, optional
+        Name or index of the header containing the number of tiles across for leveling in the dataframe, xlsx, or CSV file. The defeault is 'Level'.
+    
     Returns
     -------
     List of formatted string to insert into main.nut
@@ -612,10 +681,10 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
         ## Check length of elements of list of lists
         it = iter(industry)
         the_len = len(next(it))
-        if the_len > 6:
-            raise ValueError('Lists must not have more than 6 values values')
-        if the_len < 5:
-            raise ValueError('Lists must not have fewer than 5 values values')
+        if the_len > 8:
+            raise ValueError('Lists must not have more than 8 values values')
+        if the_len < 4:
+            raise ValueError('Lists must not have fewer than 4 values values')
         if not all(len(l) == the_len for l in it):
             raise ValueError('ind list of lists must be the same length')
     
@@ -646,6 +715,15 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
         if not ind_type_header.isnumeric():
             if not ind_type_header in industry.columns:
                 raise ValueError('ind_type_header must be valid column name')
+        if not trylevel_header.isnumeric():
+            if not trylevel_header in industry.columns:
+                raise ValueError('trylevel_header must be valid column name')
+        if not level_x2_header.isnumeric():
+            if not level_x2_header in industry.columns:
+                raise ValueError('level_x2_header must be valid column name')
+        if not level_y2_header.isnumeric():
+            if not level_y2_header in industry.columns:
+                raise ValueError('level_y2_header must be valid column name')
     
     
     #### Add industries
@@ -653,13 +731,42 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
     industry_code = [] # empty list
     
     ## if list of lists, loop through main list, values must be in the right order:
-        # X, Y, name, type
+        # X, Y, name, type, trylevel, level_x2, level_y2
     if isinstance(industry, list):
         for i in industry:
             ind_x = i[0]
             ind_y = i[1]
             ind_name = str(i[2])
             ind_type = i[3]
+            
+            if len(industry) > 4:
+                trylevel = str(i[4])
+                level_x2 = i[5]
+                level_y2 = i[6]
+                ## these are optional
+                if trylevel.tolower() not in ['true','false']:
+                    print('Error: tryelvel must be true or false. Skipping.')
+                    continue
+                else:
+                    trylevel = trylevel.tolower()
+                
+                try:
+                    level_x2 = int(level_x2)
+                    level_x2 = str(level_x2)
+                except:
+                    print('Error: level_x2 must be integer. Skipping.')
+                    continue
+                try:
+                    level_y2 = int(level_y2)
+                    level_y2 = str(level_y2)
+                except:
+                    print('Error: level_y2 must be integer. Skipping.')
+                    continue
+            else:
+                trylevel = 'false'
+                level_x2 = '0'
+                level_y2 = '0'
+                
             
             try:
                 ind_x = int(ind_x)
@@ -682,7 +789,7 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 continue
             
         
-            line = '\tTryIndustry('+ind_x+','+ind_y+','+ind_name+','+ind_type+');\n'
+            line = '\tTryIndustry('+ind_x+','+ind_y+','+ind_name+','+ind_type+','+trylevel+','+level_x2+','+level_y2+');\n'
             industry_code.append(line)
                 
     
@@ -712,6 +819,42 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 ind_type = row[ind_type_header]
                 
                 
+            ## optional
+            if trylevel_header.isnumeric():
+                trylevel = row.iloc[trylevel_header]
+            elif trylevel_header in industry:
+                trylevel = row[trylevel_header]
+                trylevel = trylevel.tolower()
+            else:
+                trylevel = 'false'
+            
+            if level_x2_header.isnumeric():
+                level_x2 = row.iloc[level_x2_header]
+            elif level_x2_header in industry:
+                level_x2 = row[level_x2_header]
+                try:
+                    level_x2 = int(level_x2)
+                    level_x2 = str(level_x2)
+                except:
+                    print('Error: level_x2 must be integer. Skipping.')
+                    continue
+            else:
+                level_x2 = '0'
+
+            if level_y2_header.isnumeric():
+                level_y2 = row.iloc[level_y2_header]
+            elif level_y2_header in industry:
+                level_y2 = row[level_y2_header]
+                try:
+                    level_y2 = int(level_y2)
+                    level_y2 = str(level_y2)
+                except:
+                    print('Error: level_y2 must be integer. Skipping.')
+                    continue
+            else:
+                level_y2 = '0'
+                
+                
                 
             ## check values
             try:
@@ -735,7 +878,7 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 continue
 
                 
-            line = '\tTryIndustry('+ind_x+','+ind_y+','+ind_name+','+ind_type+');\n'
+            line = '\tTryIndustry('+ind_x+','+ind_y+','+ind_name+','+ind_type+','+trylevel+','+level_x2+','+level_y2+');\n'
             industry_code.append(line)
             
     
@@ -744,4 +887,127 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
     return industry_code
 
 
+#### Create canal code
 
+def build_canal_code(canals, x_header='X', y_header='Y'):
+    '''
+    This function helps build the squierrel code function calls for PlaceCanal to place canal tiles.
+
+    Parameters
+    ----------
+    canals : list, dataframe, xslx, csv
+        A data structure or path to xlsx or csv file containing x,y tile coordinates to build canals.
+    x_header : str, optional
+        Name or index of the industry X tile field header in the dataframe, xlsx, or CSV file. The default is 'X'.
+    y_header : str, optional
+        Name or index of the industry Y tile field header in the dataframe, xlsx, or CSV file. The default is 'Y'.
+
+    Returns
+    -------
+    List of formatted string to insert into main.nut
+
+    '''
+    
+    print('Building code to add canals...')
+    
+    ### Check town data structures
+    if isinstance(canals, list):
+        for e in canals:
+            if not isinstance(e, list):
+                raise ValueError('Town list input must be a list of lists')
+        ## Check length of elements of list of lists
+        it = iter(canals)
+        the_len = len(next(it))
+        if the_len != 2:
+            raise ValueError('Lists must have 2 values')
+        if not all(len(l) == the_len for l in it):
+            raise ValueError('Town list of lists must be the same length')
+    
+    
+    ## check if xlsx or csv first, read into dataframe to check with dataframes
+    if isinstance(canals, str):
+        if not os.path.isfile(canals):
+            raise ValueError('canals path must be a valid xlsx or csv file.')
+        
+        match os.path.splitext(os.path.basename(canals))[1]:
+            case '.xlsx':
+                canals = pd.read_excel(canals) # assumes 1 sheet
+            case '.csv':
+                canals = pd.read_csv(canals)
+    
+    ## check if dataframe and valid column header names or indices
+    if isinstance(canals, pd.DataFrame):
+        if not x_header.isnumeric():
+            if not x_header in canals.columns:
+                raise ValueError('x_header must be valid column name')
+        if not y_header.isnumeric():
+            if not y_header in canals.columns:
+                raise ValueError('y_header must be valid column name')
+        
+        #### Add canals
+        
+        canal_code = [] # empty list to append
+        
+        ## if list of lists, loop through main list, values must be in the right order:
+            # X, Y
+        if isinstance(canals, list):
+            for c in canals:
+                canal_x = c[0]
+                canal_y = c[1]
+                
+                try:
+                    canal_x = int(canal_x)
+                    canal_x = str(canal_x)
+                except:
+                    print('Error: X tile must be integer. Skipping.')
+                    continue
+                try:
+                    canal_y = int(canal_y)
+                    canal_y = str(canal_y)
+                except:
+                    print('Error: Y tile must be integer. Skipping.')
+                    continue
+                
+            
+                line = '\tTryTown('+canal_x+','+canal_y+');\n'
+                canal_code.append(line)
+        
+        ## route for dataframes
+        elif isinstance(canals, pd.DataFrame):
+            for index, row in canals.iterrows():
+                
+                ## check if index or name
+                if x_header.isnumeric():
+                    canal_x = row.iloc[x_header]
+                else:
+                    canal_x = row[x_header]
+                    
+                if y_header.isnumeric():
+                    canal_y = row.iloc[y_header]
+                else:
+                    canal_y = row[y_header]
+                    
+                    
+                ## check values
+                try:
+                    canal_x = int(canal_x)
+                    canal_x = str(canal_x)
+                except:
+                    print('Error: X tile must be integer. Skipping.')
+                    continue
+                try:
+                    canal_y = int(canal_y)
+                    canal_y = str(canal_y)
+                except:
+                    print('Error: Y tile must be integer. Skipping.')
+                    continue
+                    
+                
+                line = '\tTryTown('+canal_x+','+canal_y+');\n'
+                canal_code.append(line)
+        
+        
+    print('Done.')
+        
+    return canal_code
+    
