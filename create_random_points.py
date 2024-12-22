@@ -16,15 +16,19 @@ from bother.
 TODO:
     - refine the default point density based on number of pixels
     - add support for defining zones based on range of row,col bounding boxes
+    
+    - fix that you have to give method as a dict to have other params be given as dict
 '''
 
 
 import rasterio as rio
 import rasterio.mask
 import geopandas as gpd
+import pandas as pd
 import numpy as np
 import warnings
 from tqdm import tqdm
+from otter import get_map_coords
 
 
 def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None, 
@@ -128,9 +132,11 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                 if m == 'uniform':
                     if size is None:
                         raise ValueError('size needed for uniform distribution')
+                    else:
+                        s = size[z]
                     
                     ## uniform is default of sample_points
-                    zone_sample = zone_feat.sample_points(size) # returns a series
+                    zone_sample = zone_feat.sample_points(s) # returns a series
                     
                     zone_points_keys.append(z)
                     zone_points_vals.append(zone_sample.geometry.values[0])
@@ -138,14 +144,16 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     
                 if m == 'poisson':
                     if size is None:
-                        raise ValueError('size needed for poisson distribution')
+                        raise ValueError('size needed for uniform distribution')
+                    else:
+                        s = size[z]
                     
                     if isinstance(intensity, dict):
                         i = intensity.get(z, None)
                     else:
                         i = intensity
                     
-                    zone_sample = zone_feat.sample_points(method=m, size=size, intensity=i) # returns a series
+                    zone_sample = zone_feat.sample_points(method=m, size=s, intensity=i) # returns a series
                     
                     zone_points_keys.append(z)
                     zone_points_vals.append(zone_sample)
@@ -153,7 +161,9 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                 
                 if m == 'normal':
                     if size is None:
-                        raise ValueError('size needed for normal distribution')
+                        raise ValueError('size needed for uniform distribution')
+                    else:
+                        s = size[z]
                     
                     if isinstance(center, dict):
                         cntr = center.get(z, None)
@@ -164,7 +174,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     else:
                         cv = cov
                         
-                    zone_sample = zone_feat.sample_points(method=m, size=size, center=cntr, cov=cv) # returns a series
+                    zone_sample = zone_feat.sample_points(method=m, size=s, center=cntr, cov=cv) # returns a series
                     
                     zone_points_keys.append(z)
                     zone_points_vals.append(zone_sample)
@@ -172,7 +182,9 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
             
                 if m == 'cluster_poisson':
                     if size is None:
-                        raise ValueError('size needed for cluster poisson distribution')
+                        raise ValueError('size needed for uniform distribution')
+                    else:
+                        s = size[z]
                         
                     if isinstance(intensity, dict):
                         i = intensity.get(z, None)
@@ -187,7 +199,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     else:
                         c_r = cluster_radius
                     
-                    zone_sample = zone_feat.sample_points(method=m, size=size, intensity=i, n_seeds=n_s, cluster_radius=c_r) # returns a series
+                    zone_sample = zone_feat.sample_points(method=m, size=s, intensity=i, n_seeds=n_s, cluster_radius=c_r) # returns a series
                     
                     zone_points_keys.append(z)
                     zone_points_vals.append(zone_sample.geometry.values[0])
@@ -195,7 +207,9 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
             
                 if m == 'cluster_normal':
                     if size is None:
-                        raise ValueError('size needed for cluster normal distribution')
+                        raise ValueError('size needed for uniform distribution')
+                    else:
+                        s = size[z]
                     
                     if isinstance(n_seeds, dict):
                         n_s = n_seeds.get(z, 2)
@@ -206,7 +220,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     else:
                         cv = cov
                         
-                    zone_sample = zone_feat.sample_points(method=m, size=size, n_seeds=n_s, cov=cv) # returns a series
+                    zone_sample = zone_feat.sample_points(method=m, size=s, n_seeds=n_s, cov=cv) # returns a series
                     
                     zone_points_keys.append(z)
                     zone_points_vals.append(zone_sample)
@@ -216,6 +230,8 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
     
         #### if one method used for all, check for dict for other params
         else:
+            
+            zone_feat = shp['geometry']
             
             zone_points_keys = []
             zone_points_vals = []
@@ -310,34 +326,43 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
     
     #### Merge into a df and extract row,col
     
-    d = {'zone_id':zone_points_keys,
+    shp_pd = pd.DataFrame(shp.drop(columns='geometry'))
+    
+    d = {zone_col:zone_points_keys,
          'geometry':zone_points_vals}
     zone_points_df = gpd.GeoDataFrame(d)
     zone_points_df = zone_points_df.explode(ignore_index=True) # explode into separate rows for each point
     
-    shapes = zone_points_df.geometry.values.tolist()
+    merged_df = shp_pd.merge(zone_points_df,how='inner',on=zone_col)
+    merged_df = gpd.GeoDataFrame(merged_df)
     
-    row = [None]*len(shapes)
-    col = [None]*len(shapes)
-    
-    with rio.open(ras) as src:
-        for i in tqdm(range(len(shapes)), position=0, leave=True):
-            s = [shapes[i]]
-            out_image, out_transformation = rio.mask.mask(src, s, crop=False) # nodata defaults to 0, this is fine
-            idx = np.argwhere(out_image)
-            if not out_image.any():
-                warnings.warn('Point on water or outside of map. Returning nan')
-                row[i] = np.nan
-                col[i] = np.nan
-            if len(idx) != 0:
-                # top left corner is 1,1 in OTTD. 
-                # in GIS, top left corner is 0,0. Need to add 1 to all coordinates
-                row[i] = idx[0,1] + 1 
-                col[i] = idx[0,2] + 1
+    zone_rc = get_map_coords(ras=ras,
+                             coords=merged_df)
     
     
-    zone_points_df['row'] = row
-    zone_points_df['col'] = col
+    # shapes = zone_points_df.geometry.values.tolist()
+    
+    # row = [None]*len(shapes)
+    # col = [None]*len(shapes)
+    
+    # with rio.open(ras) as src:
+    #     for i in tqdm(range(len(shapes)), position=0, leave=True):
+    #         s = [shapes[i]]
+    #         out_image, out_transformation = rio.mask.mask(src, s, crop=False) # nodata defaults to 0, this is fine
+    #         idx = np.argwhere(out_image)
+    #         if not out_image.any():
+    #             warnings.warn('Point on water or outside of map. Returning nan')
+    #             row[i] = np.nan
+    #             col[i] = np.nan
+    #         if len(idx) != 0:
+    #             # top left corner is 1,1 in OTTD. 
+    #             # in GIS, top left corner is 0,0. Need to add 1 to all coordinates
+    #             row[i] = idx[0,1] + 1 
+    #             col[i] = idx[0,2] + 1
     
     
-    return zone_points_df
+    # zone_points_df['row'] = row
+    # zone_points_df['col'] = col
+    
+    
+    return zone_rc

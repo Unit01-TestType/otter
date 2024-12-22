@@ -73,7 +73,7 @@ def build_info(outdir, author, name, short_name, description, version='SELF_VERS
     info_file.write(' * '+comment+'\n')
     info_file.write('*/\n\n')
     
-    info_file.write('requre("version.nut")\n\n')
+    info_file.write('require("version.nut");\n\n')
     
     ## Write GSInfo extension class with input parameters
     info_file.write('class FMainClass extends GSInfo {\n')
@@ -85,11 +85,11 @@ def build_info(outdir, author, name, short_name, description, version='SELF_VERS
     info_file.write('\tfunction CreateInstance()\t{ return '+'"MainClass"; }\n')
     info_file.write('\tfunction GetShortName() \t{ return '+'"'+short_name+'"'+'; }\n')
     info_file.write('\tfunction GetAPIVersion() \t{ return '+'"'+API_version+'"'+'; }\n')
-    info_file.write('\tfunction getURL() \t{ return '+'"'+url+'"'+'; }\n')
+    info_file.write('\tfunction GetURL() \t\t\t{ return '+'"'+url+'"'+'; }\n\n')
     
     ## write settings function
-    info_file.write('\tfunction GetSettingsO() {\n')
-    info_file.write('\t\tAddSettings({name = "log_level", description = "Debug: Log level (higher = print more)", easy_value = 3, medium_value = 3, hard_value = 3, custom_value = 3, flags = CONFIG_INGAME, min_value = 1, max_value = 3});\n')
+    info_file.write('\tfunction GetSettings() {\n')
+    info_file.write('\t\tAddSetting({name = "log_level", description = "Debug: Log level (higher = print more)", easy_value = 3, medium_value = 3, hard_value = 3, custom_value = 3, flags = CONFIG_INGAME, min_value = 1, max_value = 3});\n')
     info_file.write('\t\tAddLabels("log_level", {_1 = "1: Info", _2 = "2: Verbose", _3 = "3: Debug" } );\n')
     info_file.write('\t}\n')
     info_file.write('}\n\n')

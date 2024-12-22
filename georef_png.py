@@ -7,6 +7,7 @@ back to a tif using the tif output from bother as a template for georeferencing.
 import rasterio as rio
 from rasterio.transform import from_gcps
 from rasterio.control import GroundControlPoint
+import numpy as np
 
 
 def georef_png(bother_tif, bother_png, png_scale, new_tif, crs='epsg:4326'):
@@ -34,10 +35,10 @@ def georef_png(bother_tif, bother_png, png_scale, new_tif, crs='epsg:4326'):
     '''
 
     ras = rio.open(bother_tif)
-
     bounds = ras.bounds
+    ras.close()
     
-    res = scale.split('x')
+    res = png_scale.split('x')
     w = int(res[0]) # width
     h = int(res[1]) # height
 
@@ -53,19 +54,19 @@ def georef_png(bother_tif, bother_png, png_scale, new_tif, crs='epsg:4326'):
 
     with rio.open(bother_png, 'r') as png:
         d = png.read()
-
+    d2 = d.astype(np.float32)
     # write to new tif
     with rio.open(new_tif, 
                   'w',
                   driver='GTiff',
-                  height=d.shape[1],
-                  width=d.shape[2],
-                  count=1,#numebr of bands
-                  dtype=d.dtype,
+                  height=d2.shape[1],
+                  width=d2.shape[2],
+                  count=1,# numebr of bands
+                  dtype=d2.dtype,
                   crs=crs,
-                  nodata=None, # change if data has nodata value
+                  nodata=np.nan,
                   transform=transform) as dst:
         
-        dst.write(d)
+        dst.write(d2)
         
-    ras.close()
+    

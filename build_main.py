@@ -14,6 +14,7 @@ TODO:
 
 import os
 import pandas as pd
+import warnings
 
 
 #### Main function to build main.nut
@@ -74,8 +75,9 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
          'import("util.superlib", "SuperLib", 36);\n'
          'Result <- SuperLib.Result;\n',
          'Log <- SuperLib.Log;\n',
-         'Helper <- SuperLib.Tile;\n',
-         'Tile <- SuperLib.Direction;\n',
+         'Helper <- SuperLib.Helper;\n',
+         'Tile <- SuperLib.Tile;\n',
+         'Direction <- SuperLib.Direction;\n'
          'Town <- SuperLib.Town;\n',
          'Industry <- SuperLib.Industry;\n',
          'Story <- SuperLib.Story;\n',
@@ -91,7 +93,7 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
          '/** Import other source code files **/\n',
          'require("version.nut"); // get SELF_VERSION\n',
          '//require("some_file.nut");\n\n\n',
-         'class MainClass extends GScontroller\n',
+         'class MainClass extends GSController\n',
          '{\n',
          '\t_loaded_data = null;\n',
          '\t_loaded_from_version = null;\n',
@@ -133,6 +135,7 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
     	'\tGSController.Sleep(1);\n\n',
     	'\t// Game has now started and if it is a single player game,\n',
     	'\t// company 0 exist and is the human company.\n\n',
+        '\tGSGame.Pause();\n\n',
     	'\t// Main Game Script loop\n'
          ]
 
@@ -141,23 +144,36 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
     #### Add towns
     if towns_code is not None:
         main_file.writelines(towns_code)
-        main_file.write('\n\tprint("Finished adding towns.")\n\n')
+        main_file.write('\n\tprint("Finished adding towns.");\n\n')
     
     
     #### Add industries
     if industry_code is not None:
+        main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
         main_file.writelines(industry_code)
-        main_file.write('\n\tprint("Finished adding industries.")\n\n')
+        main_file.write('\n\tprint("Finished adding industries.");\n\n')
+        main_file.write('\t// set bank balance back to starting balance\n')
+        main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
+        main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
+        main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
         
     
     #### Add canals
     if canal_code is not None:
+        main_file.write('\t// Start in deity mode to add funds. Then change to company mode to place canals.\n')
+        main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
         main_file.writelines(canal_code)
-        main_file.write('\n\tprint("Finished adding canals.")\n\n')
+        main_file.write('\n\tprint("Finished adding canals.");\n\n')
+        main_file.write('\t// set bank balance back to starting balance\n')
+        main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
+        main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
+        main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
 
     
     #### End of main script loop
-    main_file.write('\n\tprint("Finish");\n\n }')
+    main_file.write('\tprint("Finish");\n\n')
+    main_file.write('\n\tGSGame.Unpause();\n\n\n')
+    main_file.write('}\n\n')
     
     
     l2 = [
@@ -302,44 +318,80 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
          
          
          ##### TryIndustry Function
-         'function MainClass::TryIndustry(x, y, name, type) {\n',
-             '\tlocal success = false;\n',
-
-             '\tlocal cur_tile = GSMap.GetTileIndex(x, y);\n',
-             '\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n\n',
-	
+         'function MainClass::TryIndustry(x, y, name, type, trylevel, level_x2, level_y2) {\n',
+        	 '\tlocal success = false;\n',
+             '\tlocal timeout = 2000;\n',
+             '\tlocal counter = 0;\n\n',
+        
+        	 '\tlocal cur_tile = GSMap.GetTileIndex(x, y);\n',
+        	 '\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n\n',
+        
         	 '\tif(success) {\n',
-        		 '\t\tprint(type);\n',
-        		 '\t\tprint("Success");\n',
+        		 '\t\t// print("Success");\n',
+                 '\t\treturn success;\n'
+        	 '\t} else {\n',
+        		 '\t\tif (trylevel) {\n\n',
+        
+        		 '\t\t\tlocal x2 = x + level_x2 + 1;\n',
+        		 '\t\t\tlocal y2 = y + level_y2 + 1;\n',
+        		 '\t\t\tlocal level_success = false;\n',
+        		 '\t\t\tlevel_success = LevelTiles(x, y, x2, y2)\n\n',
+        
+        		 '\t\t\tif (level_success) {\n',
+        			 '\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n',
+    				 '\t\t\t\twhile(!success && counter < timeout) {\n'
+    					 '\t\t\t\t\tcur_tile = GSMap.GetTileIndex(x, y);\n'
+    					 '\t\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n'
+    					 '\t\t\t\t\t// move coordinates around until it places\n'
+    					 '\t\t\t\t\tlocal x = x + GSBase.RandRange(3) - 1;\n'
+    					 '\t\t\t\t\tlocal y = y + GSBase.RandRange(3) - 1;\n'
+    					 '\t\t\t\t\tcounter += 1;\n'
+    				 '\t\t\t\t}\n'		
+        			 '\t\t\t\tif (success) {\n',
+        				 '\t\t\t\t\t//print("Successfully added industry after leveling.");\n',
+        			 '\t\t\t\t} else {\n',
+        				 '\t\t\t\t\tprint("Failed to add industry after leveling: " + name);\n',
+        			 '\t\t\t\t}\n',
+        		 '\t\t\t} else {\n',
+        			 '\t\t\t\tprint("Leveling failed. Could not place industry: " + name);\n',
+        		 '\t\t\t}\n\n',
+        
+          		 '\t\t} else {\n',
+          			 '\t\t\twhile(!success && counter < timeout) {\n',
+          				 '\t\t\t\tcur_tile = GSMap.GetTileIndex(x, y);\n',
+          				 '\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n',
+          				 '\t\t\t\t// move coordinates around until it places\n',
+          				 '\t\t\t\tlocal x = x + GSBase.RandRange(3) - 1;\n',
+          				 '\t\t\t\tlocal y = y + GSBase.RandRange(3) - 1;\n',
+          				 '\t\t\t\tcounter += 1;\n',
+          			 '\t\t\t}\n',
+          			 '\t\t\tif (!success){\n',
+          				 '\t\t\t\tprint("Failed to add industry: " + name);\n',
+          			 '\t\t\t}\n',
+          		 '\t\t}\n',
         	 '\t}\n\n',
-        	
-             '\tif(!success) {\n',
-        		 '\t\tprint("Something went wrong");\n',
-             '\t}\n\n',
-        	
+        		
         	 '\treturn success;\n',
-         '}\n\n'
+         '}\n\n\n',
          
          
          #### PlaceCanal Function
          '// function for placing canal like river and lake at elevation\n',
-         'function Mainclass::PlaceCanal(x, y) {\n\n',
-        	
-        	 '\tGSCompanyMode.IsDeity();\n',
-        	 '\tlocal companyidx = 0;\n',
-        	 '\tlocal bank_blance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n\n',
+         'function MainClass::PlaceCanal(x, y) {\n\n',
+         
+             '\tlocal deity = GSCompanyMode.IsDeity();\n',
+             '\tlocal companyIdx = 0;\n',
+             '\tlocal cm;\n',
+             '\tif (deity) {\n',
+            	 '\t\tcm = GSCompanyMode(companyIdx);\n',
+             '\t}\n\n',         
         	
         	 '\tlocal canal_success = false;\n',
-        	 '\tlocal lock_success = false;\n',
         	 '\tlocal cur_tile = GSMap.GetTileIndex(x,y);\n',
-        	
         	 '\tcanal_success = GSMarine.BuildCanal(cur_tile);\n',
-        	 '\tif (!canal_success) {\n',
-        	 	'\t\tlock_success = GSMarin.BuildLock(cur_tile);\n',
-        	 	'\t\tif (!lock_success) {\n',
-        			'\t\t\tprint(">Could not build canal or lock at " + x + " " +y)\n',
-        		'\t\t}\n',
-        	 '\t}\n\n',
+        	 # '\tif (!canal_success) {\n',
+        		# '\t\t//print(">Could not build canal at " + x + " " +y);\n',
+        	 # '\t}\n\n',
         	
          '}\n\n',
          
@@ -350,20 +402,22 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
         	'\t// x1,y1 is the upper left corner\n',
         	'\t// x2,y2 is the lower right corner\n\n',
         	
-        	'\tprint("Leveling tiles...");\n\n',
+        	'\t// print("Leveling tiles...");\n\n',
         	
-        	'\tGSCompanyMode.IsDeity();\n',
-        	'\tlocal companyidx = 0;\n',
-        	'\tlocal bank_blance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n',
-        	'\tlocal start_tile = GSMap.GetTileIndex(x1, y1);\n',
-        	'\tlocal end_tile = GSMap.GetTileIndex(x2, y2);\n\n',
+        	 '\tlocal start_tile = GSMap.GetTileIndex(x1, y1);\n',
+        	 '\tlocal end_tile = GSMap.GetTileIndex(x2, y2);\n',
+        	 '\tlocal deity = GSCompanyMode.IsDeity();\n',
+        	 '\tlocal companyIdx = 0;\n',
+        	 '\tlocal cm;\n',
+        	 '\tif (deity) {\n',
+        		 '\t\tcm = GSCompanyMode(companyIdx);\n',
+        	 '\t}\n\n',
         	
         	'\tlocal success = false;\n',
-        	
         	'\tsuccess = GSTile.LevelTiles(start_tile, end_tile);\n\n',
         	
         	'\tif (success) {\n',
-        		'\t\tprint(">Leveling succeeded.");\n',
+        		'\t\t//print(">Leveling succeeded.");\n',
         	'\t} else {\n',
         		'\t\tprint(">Leveling failed.");\n',
         	'\t}\n\n',
@@ -538,7 +592,7 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                     continue
                 
             
-                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+town_name+','+town_pop+');\n'
+                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+');\n'
                 towns_code.append(line)
         
         ## route for dataframes
@@ -629,7 +683,7 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                     continue
                     
                 
-                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+town_name+','+town_pop+');\n'
+                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+');\n'
                 towns_code.append(line)
         
         
@@ -641,7 +695,7 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
 #### Create industries code
 
 def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_header='Name',ind_type_header='Type',
-                        trylevel_header='Level', level_x2_header='Level_down', level_y2_header='Level_across'):
+                        trylevel_header=None, level_x2_header=None, level_y2_header=None):
     '''
     This function helps build the squirrel code function calls for TryIndustry to build industries.
 
@@ -715,15 +769,17 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
         if not ind_type_header.isnumeric():
             if not ind_type_header in industry.columns:
                 raise ValueError('ind_type_header must be valid column name')
-        if not trylevel_header.isnumeric():
-            if not trylevel_header in industry.columns:
-                raise ValueError('trylevel_header must be valid column name')
-        if not level_x2_header.isnumeric():
-            if not level_x2_header in industry.columns:
-                raise ValueError('level_x2_header must be valid column name')
-        if not level_y2_header.isnumeric():
-            if not level_y2_header in industry.columns:
-                raise ValueError('level_y2_header must be valid column name')
+                
+        if trylevel_header is not None:
+            if not trylevel_header.isnumeric():
+                if not trylevel_header in industry.columns:
+                    raise ValueError('trylevel_header must be valid column name')
+            if not level_x2_header.isnumeric():
+                if not level_x2_header in industry.columns:
+                    raise ValueError('level_x2_header must be valid column name')
+            if not level_y2_header.isnumeric():
+                if not level_y2_header in industry.columns:
+                    raise ValueError('level_y2_header must be valid column name')
     
     
     #### Add industries
@@ -744,24 +800,24 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 level_x2 = i[5]
                 level_y2 = i[6]
                 ## these are optional
-                if trylevel.tolower() not in ['true','false']:
+                if str(trylevel).lower() not in ['true','false']:
                     print('Error: tryelvel must be true or false. Skipping.')
                     continue
                 else:
-                    trylevel = trylevel.tolower()
+                    trylevel = str(trylevel).lower()
                 
                 try:
                     level_x2 = int(level_x2)
                     level_x2 = str(level_x2)
                 except:
-                    print('Error: level_x2 must be integer. Skipping.')
-                    continue
+                    warnings.warn('Warning: level_x2 must be integer.')
+                    level_x2 = '0'
                 try:
                     level_y2 = int(level_y2)
                     level_y2 = str(level_y2)
                 except:
-                    print('Error: level_y2 must be integer. Skipping.')
-                    continue
+                    warnings.warn('Warning: level_y2 must be integer.')
+                    level_y2 = '0'
             else:
                 trylevel = 'false'
                 level_x2 = '0'
@@ -789,7 +845,7 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 continue
             
         
-            line = '\tTryIndustry('+ind_x+','+ind_y+','+ind_name+','+ind_type+','+trylevel+','+level_x2+','+level_y2+');\n'
+            line = '\tTryIndustry('+ind_x+','+ind_y+','+'"'+ind_name+'"'+','+ind_type+','+trylevel+','+level_x2+','+level_y2+');\n'
             industry_code.append(line)
                 
     
@@ -820,40 +876,44 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 
                 
             ## optional
-            if trylevel_header.isnumeric():
-                trylevel = row.iloc[trylevel_header]
-            elif trylevel_header in industry:
-                trylevel = row[trylevel_header]
-                trylevel = trylevel.tolower()
+            if trylevel_header is not None:
+                if trylevel_header.isnumeric():
+                    trylevel = row.iloc[trylevel_header]
+                elif trylevel_header in industry:
+                    trylevel = row[trylevel_header]
+                    trylevel = str(trylevel).lower()
+                else:
+                    trylevel = 'false'
+                
+                if level_x2_header.isnumeric():
+                    level_x2 = row.iloc[level_x2_header]
+                elif level_x2_header in industry:
+                    level_x2 = row[level_x2_header]
+                    try:
+                        level_x2 = int(level_x2)
+                        level_x2 = str(level_x2)
+                    except:
+                        warnings.warn('Warning: level_x2 must be integer.')
+                        level_x2 = '0'
+                else:
+                    level_x2 = '0'
+    
+                if level_y2_header.isnumeric():
+                    level_y2 = row.iloc[level_y2_header]
+                elif level_y2_header in industry:
+                    level_y2 = row[level_y2_header]
+                    try:
+                        level_y2 = int(level_y2)
+                        level_y2 = str(level_y2)
+                    except:
+                        warnings.warn('Warning: level_y2 must be integer.')
+                        level_y2 = '0'
+                else:
+                    level_y2 = '0'
             else:
                 trylevel = 'false'
-            
-            if level_x2_header.isnumeric():
-                level_x2 = row.iloc[level_x2_header]
-            elif level_x2_header in industry:
-                level_x2 = row[level_x2_header]
-                try:
-                    level_x2 = int(level_x2)
-                    level_x2 = str(level_x2)
-                except:
-                    print('Error: level_x2 must be integer. Skipping.')
-                    continue
-            else:
                 level_x2 = '0'
-
-            if level_y2_header.isnumeric():
-                level_y2 = row.iloc[level_y2_header]
-            elif level_y2_header in industry:
-                level_y2 = row[level_y2_header]
-                try:
-                    level_y2 = int(level_y2)
-                    level_y2 = str(level_y2)
-                except:
-                    print('Error: level_y2 must be integer. Skipping.')
-                    continue
-            else:
                 level_y2 = '0'
-                
                 
                 
             ## check values
@@ -878,7 +938,7 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 continue
 
                 
-            line = '\tTryIndustry('+ind_x+','+ind_y+','+ind_name+','+ind_type+','+trylevel+','+level_x2+','+level_y2+');\n'
+            line = '\tTryIndustry('+ind_x+','+ind_y+','+'"'+ind_name+'"'+','+ind_type+','+trylevel+','+level_x2+','+level_y2+');\n'
             industry_code.append(line)
             
     
@@ -969,7 +1029,7 @@ def build_canal_code(canals, x_header='X', y_header='Y'):
                     continue
                 
             
-                line = '\tTryTown('+canal_x+','+canal_y+');\n'
+                line = '\tPlaceCanal('+canal_x+','+canal_y+');\n'
                 canal_code.append(line)
         
         ## route for dataframes
@@ -987,24 +1047,55 @@ def build_canal_code(canals, x_header='X', y_header='Y'):
                 else:
                     canal_y = row[y_header]
                     
-                    
-                ## check values
-                try:
-                    canal_x = int(canal_x)
-                    canal_x = str(canal_x)
-                except:
-                    print('Error: X tile must be integer. Skipping.')
-                    continue
-                try:
-                    canal_y = int(canal_y)
-                    canal_y = str(canal_y)
-                except:
-                    print('Error: Y tile must be integer. Skipping.')
-                    continue
-                    
                 
-                line = '\tTryTown('+canal_x+','+canal_y+');\n'
-                canal_code.append(line)
+                ## check if multiple row,col pairs given for a single row
+                ## if lists, loop through the pairs in the list
+                if (isinstance(canal_x, list) and not isinstance (canal_y,list)) or (isinstance(canal_y, list) and not isinstance (canal_x,list)):
+                    raise ValueError('Both X and Y columns must be lists if one is a list.')
+                elif (isinstance(canal_x, list) and isinstance(canal_y, list)):
+                    if len(canal_x) != len(canal_y):
+                        raise ValueError('Multipoint lists must have the same number of row as col')
+                    
+                    for i in range(len(canal_x)):
+                        canal_x_i = canal_x[i]
+                        canal_y_i = canal_y[i]
+                    
+                        ## check values
+                        try:
+                            canal_x_i = int(canal_x_i)
+                            canal_x_i = str(canal_x_i)
+                        except:
+                            print('Error: X tile must be integer. Skipping.')
+                            continue
+                        try:
+                            canal_y_i = int(canal_y_i)
+                            canal_y_i = str(canal_y_i)
+                        except:
+                            print('Error: Y tile must be integer. Skipping.')
+                            continue
+                            
+                        
+                        line = '\tPlaceCanal('+canal_x_i+','+canal_y_i+');\n'
+                        canal_code.append(line)
+                        
+                else:
+                    ## check values
+                    try:
+                        canal_x = int(canal_x)
+                        canal_x = str(canal_x)
+                    except:
+                        print('Error: X tile must be integer. Skipping.')
+                        continue
+                    try:
+                        canal_y = int(canal_y)
+                        canal_y = str(canal_y)
+                    except:
+                        print('Error: Y tile must be integer. Skipping.')
+                        continue
+                        
+                    
+                    line = '\tPlaceCanal('+canal_x+','+canal_y+');\n'
+                    canal_code.append(line)
         
         
     print('Done.')

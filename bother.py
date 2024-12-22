@@ -33,7 +33,7 @@ def error(msg: str):
     print(f'ERROR: {msg}', file=sys.stderr)
     sys.exit(1)
 
-def bother(bounds, outfile, outfile_tif=None, infile_tif=None, scale_data=None, epsg='4326', raise_low=0, 
+def bother(outfile, bounds=None, outfile_tif=None, infile_tif=None, scale_data=None, epsg='4326', raise_low=0, 
            raise_undersea=None, no_sea=None, lakes=None, max_brightness=255, infile_png=None, crop=None,
            scale_image=None):
     '''
@@ -85,9 +85,10 @@ def bother(bounds, outfile, outfile_tif=None, infile_tif=None, scale_data=None, 
         error('Must pass bounds, infile_tif or infile_png.')
     elif sum(((bounds is not None), (infile_tif is not None), (infile_png is not None))) > 1:
         error('bounds, infile_tif and infile_png are mutually exclusive.')
-        
-    if len(bounds) != 4:
-        error('bounds must be a list of 4 values.')
+    
+    if bounds is not None:
+        if len(bounds) != 4:
+            error('bounds must be a list of 4 values.')
     
     if (scale_data is not None) and scale_data == 0:
         error('0 is invalid value for scaling.')
