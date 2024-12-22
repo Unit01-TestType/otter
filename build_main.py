@@ -320,11 +320,26 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
          ##### TryIndustry Function
          'function MainClass::TryIndustry(x, y, name, type, trylevel, level_x2, level_y2) {\n',
         	 '\tlocal success = false;\n',
-             '\tlocal timeout = 2000;\n',
+             '\tlocal timeout = 3000;\n',
              '\tlocal counter = 0;\n\n',
+             '\tlocal xw = x;\n',
+             '\tlocal yw = y;\n',
+             '\tlocal xl = x;\n',
+             '\tlocal yl = y;\n\n'
         
         	 '\tlocal cur_tile = GSMap.GetTileIndex(x, y);\n',
         	 '\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n\n',
+        	 '\tif(success) {\n',
+        		 '\t\treturn success;\n',
+        	 '\t}\n',
+             '\twhile(!success && counter < timeout) {\n',
+				 '\t\tcur_tile = GSMap.GetTileIndex(xw, yw);\n',
+				 '\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n',
+				 '\t\t// move coordinates around until it places\n',
+				 '\t\txw = xw + GSBase.RandRange(3) - 1;\n',
+				 '\t\tyw = yw + GSBase.RandRange(3) - 1;\n',
+				 '\t\tcounter += 1;\n',
+			 '\t}\n',
         
         	 '\tif(success) {\n',
         		 '\t\t// print("Success");\n',
@@ -339,12 +354,13 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
         
         		 '\t\t\tif (level_success) {\n',
         			 '\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n',
+                     '\t\t\t\tcounter = 0;\n'
     				 '\t\t\t\twhile(!success && counter < timeout) {\n'
-    					 '\t\t\t\t\tcur_tile = GSMap.GetTileIndex(x, y);\n'
+    					 '\t\t\t\t\tcur_tile = GSMap.GetTileIndex(xl, yl);\n'
     					 '\t\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n'
     					 '\t\t\t\t\t// move coordinates around until it places\n'
-    					 '\t\t\t\t\tlocal x = x + GSBase.RandRange(3) - 1;\n'
-    					 '\t\t\t\t\tlocal y = y + GSBase.RandRange(3) - 1;\n'
+    					 '\t\t\t\t\txl = xl + GSBase.RandRange(3) - 1;\n'
+    					 '\t\t\t\t\tyl = yl + GSBase.RandRange(3) - 1;\n'
     					 '\t\t\t\t\tcounter += 1;\n'
     				 '\t\t\t\t}\n'		
         			 '\t\t\t\tif (success) {\n',
@@ -356,15 +372,8 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
         			 '\t\t\t\tprint("Leveling failed. Could not place industry: " + name);\n',
         		 '\t\t\t}\n\n',
         
-          		 '\t\t} else {\n',
-          			 '\t\t\twhile(!success && counter < timeout) {\n',
-          				 '\t\t\t\tcur_tile = GSMap.GetTileIndex(x, y);\n',
-          				 '\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n',
-          				 '\t\t\t\t// move coordinates around until it places\n',
-          				 '\t\t\t\tlocal x = x + GSBase.RandRange(3) - 1;\n',
-          				 '\t\t\t\tlocal y = y + GSBase.RandRange(3) - 1;\n',
-          				 '\t\t\t\tcounter += 1;\n',
-          			 '\t\t\t}\n',
+          		 '\t\t} else {\n\n',
+          			 
           			 '\t\t\tif (!success){\n',
           				 '\t\t\t\tprint("Failed to add industry: " + name);\n',
           			 '\t\t\t}\n',
@@ -415,7 +424,10 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
         	
         	'\tlocal success = false;\n',
         	'\tsuccess = GSTile.LevelTiles(start_tile, end_tile);\n\n',
-        	
+        	'\tif (!success && GSError.GetLastErrorString() == "ERR_AREA_ALREADY_FLAT") {\n',
+        		'\t\tprint(">Area already flat");\n',
+        		'\t\tsuccess = true;\n',
+        	'\t}\n',
         	'\tif (success) {\n',
         		'\t\t//print(">Leveling succeeded.");\n',
         	'\t} else {\n',
