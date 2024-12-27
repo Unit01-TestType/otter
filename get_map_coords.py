@@ -172,7 +172,7 @@ def get_map_coords(ras, coords, outpath=None, lat_col=None, long_col=None,
         for i in tqdm(range(len(shapes)), position=0, leave=True):
             s = shapes[i]
             ## check for empty points
-            if s.is_empty:
+            if (s.is_empty) or (not s.is_valid):
                 continue
             s = [s]
             out_image, out_transformation = rio.mask.mask(src, s, crop=False) # nan where not overlapping

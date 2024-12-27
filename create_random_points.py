@@ -18,9 +18,11 @@ TODO:
     - add support for defining zones based on range of row,col bounding boxes
     
     - fix that you have to give method as a dict to have other params be given as dict
+    - fix the non-dict route
 '''
 
 
+import os
 import rasterio as rio
 import rasterio.mask
 import geopandas as gpd
@@ -28,11 +30,11 @@ import pandas as pd
 import numpy as np
 import warnings
 from tqdm import tqdm
-from otter import get_map_coords
+import otter
 
 
 def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None, 
-                         outpath=None, shp_outpath=None, size=None, intensity=None, 
+                         outpath=None, size=None, intensity=None, 
                          center=None, cov=None, n_seeds=2, cluster_radius=None):
     '''
     This function creates random points given zonal and value constraints and returns the
@@ -50,9 +52,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
     method : dict
         dictionary defining random points generation methods where the zone id is the key
     outpath : str, path, optional
-        path to the output CSV or Excel file to write the output dataframe. The default is None.
-    shp_outpath : str, path, optional
-        path to the output shapefile to write the data. The default is None.
+        path to the output CSV or Excel file or shapefile to write the output dataframe. The default is None.
     size : int, tuple, dict
         number of points to generate; must pass a dict if defining different inputs for multiple zones
     intensity : float, dict
@@ -156,7 +156,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     zone_sample = zone_feat.sample_points(method=m, size=s, intensity=i) # returns a series
                     
                     zone_points_keys.append(z)
-                    zone_points_vals.append(zone_sample)
+                    zone_points_vals.append(zone_sample.geometry.values[0])
                 
                 
                 if m == 'normal':
@@ -177,7 +177,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     zone_sample = zone_feat.sample_points(method=m, size=s, center=cntr, cov=cv) # returns a series
                     
                     zone_points_keys.append(z)
-                    zone_points_vals.append(zone_sample)
+                    zone_points_vals.append(zone_sample.geometry.values[0])
             
             
                 if m == 'cluster_poisson':
@@ -223,7 +223,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     zone_sample = zone_feat.sample_points(method=m, size=s, n_seeds=n_s, cov=cv) # returns a series
                     
                     zone_points_keys.append(z)
-                    zone_points_vals.append(zone_sample)
+                    zone_points_vals.append(zone_sample.geometry.values[0])
         
         
         
@@ -233,7 +233,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
             
             zone_feat = shp['geometry']
             
-            zone_points_keys = []
+            zone_points_keys = shp[zone_col]
             zone_points_vals = []
         
             if method == 'uniform':
@@ -243,8 +243,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                 ## uniform is default of sample_points
                 zone_sample = zone_feat.sample_points(size) # returns a series
                 
-                zone_points_keys.append(z)
-                zone_points_vals.append(zone_sample)
+                zone_points_vals.append(zone_sample.geometry.values[0])
                 
                 
             if method == 'poisson':
@@ -258,8 +257,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                 
                 zone_sample = zone_feat.sample_points(method=method, size=size, intensity=i) # returns a series
                 
-                zone_points_keys.append(z)
-                zone_points_vals.append(zone_sample)
+                zone_points_vals.append(zone_sample.geometry.values[0])
             
             
             if method == 'normal':
@@ -277,8 +275,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     
                 zone_sample = zone_feat.sample_points(method=method, size=size, center=cntr, cov=cv) # returns a series
                 
-                zone_points_keys.append(z)
-                zone_points_vals.append(zone_sample)
+                zone_points_vals.append(zone_sample.geometry.values[0])
         
         
             if method == 'cluster_poisson':
@@ -300,8 +297,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                 
                 zone_sample = zone_feat.sample_points(method=method, size=size, intensity=i, n_seeds=n_s, cluster_radius=c_r) # returns a series
                 
-                zone_points_keys.append(z)
-                zone_points_vals.append(zone_sample)
+                zone_points_vals.append(zone_sample.geometry.values[0])
                 
         
             if method == 'cluster_normal':
@@ -319,8 +315,7 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
                     
                 zone_sample = zone_feat.sample_points(method=method, size=size, n_seeds=n_s, cov=cv) # returns a series
                 
-                zone_points_keys.append(z)
-                zone_points_vals.append(zone_sample)
+                zone_points_vals.append(zone_sample.geometry.values[0])
         
 
     
@@ -336,8 +331,8 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
     merged_df = shp_pd.merge(zone_points_df,how='inner',on=zone_col)
     merged_df = gpd.GeoDataFrame(merged_df)
     
-    zone_rc = get_map_coords(ras=ras,
-                             coords=merged_df)
+    zone_rc = otter.get_map_coords(ras=ras,
+                                   coords=merged_df)
     
     
     # shapes = zone_points_df.geometry.values.tolist()
@@ -363,6 +358,19 @@ def create_random_points(ras, zone_shp_path=None, zone_col=None, method=None,
     
     # zone_points_df['row'] = row
     # zone_points_df['col'] = col
+    
+    if outpath is not None:
+        print('Writing to file...')
+        if os.path.splitext(os.path.basename(outpath))[1] == '.csv':
+            zone_rc.to_csv(outpath, index=False)
+            
+        if os.path.splitext(os.path.basename(outpath))[1] == '.xlsx':
+            zone_rc.to_excel(outpath, index=False)
+            
+        if os.path.splitext(os.path.basename(outpath))[1] == '.shp':
+            gdf = gpd.GeoDataFrame(zone_rc, geometry='geometry')
+            gdf.crs = 'EPSG:4326'
+            gdf.to_file(outpath, driver='ESRI Shapefile')
     
     
     return zone_rc
