@@ -158,8 +158,8 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
         w = arr.shape[2]
         ras_cols, ras_rows = np.meshgrid(np.arange(w), np.arange(h))
         xs, ys = rio.transform.xy(src.transform, ras_rows, ras_cols)
-        longs = np.array(xs)
-        lats = np.array(ys)
+        longs = np.array(xs).reshape((h,w))
+        lats = np.array(ys).reshape((h,w))
         
     ## match latitude and longitude with provided tile coordinates
     long_list = [None]*len(tile_coords)

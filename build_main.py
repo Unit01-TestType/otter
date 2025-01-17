@@ -13,6 +13,7 @@ TODO:
 
 
 import os
+import numpy as np
 import pandas as pd
 import warnings
 
@@ -912,7 +913,10 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                     trylevel = row.iloc[trylevel_header]
                 elif trylevel_header in industry:
                     trylevel = row[trylevel_header]
-                    trylevel = str(trylevel).lower()
+                    if np.isnan(trylevel):
+                        trylevel = 'false'
+                    else:
+                        trylevel = str(trylevel).lower()
                 else:
                     trylevel = 'false'
                 

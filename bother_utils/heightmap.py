@@ -15,7 +15,7 @@ import rasterio
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 from rasterio.io import MemoryFile
 
-from bother_utils.srtm import SRTM_NODATA
+from otter.bother_utils.srtm import SRTM_NODATA
 
 
 WGS84 = 'EPSG:4326' # Mercator - The default CRS used in the STRM data
