@@ -14,11 +14,10 @@ from bother.
 
 '''
 TODO:
+    Overhaul this whole file. Make use of **kwargs to pass parms
+    
     - refine the default point density based on number of pixels
     - add support for defining zones based on range of row,col bounding boxes
-    
-    - fix that you have to give method as a dict to have other params be given as dict
-    - fix the non-dict route
 '''
 
 
