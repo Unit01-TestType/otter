@@ -18,7 +18,7 @@ import warnings
 
 
 #### Main function to build main.nut
-def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
+def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, signs_code=None):
     '''
     This function builds main.nut file for a custom map gamescript. 
 
@@ -32,6 +32,8 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
         A list containing formatted string to add industry line code.
     canal_code : list
         A list containing formatted string to add canal line code.
+    signs_code : list
+        A list containing formatted string to add signs line code.
 
     Returns
     -------
@@ -169,6 +171,10 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
         main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
         main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
 
+    #### Add signs
+    if signs_code is not None:
+        main_file.writelines(signs_code)
+        main_file.write('\n\tprint("Finished adding signs.");\n\n')
     
     #### End of main script loop
     main_file.write('\tprint("Finish");\n\n')
@@ -436,8 +442,21 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None):
         	
         	'\treturn success;\n\n',
         	
-        '}'
+        '}',
          
+         '// function for placing POI signs to the map\n',
+         'function MainClass::PlaceSign(x,y,label) {\n\n',
+        	
+        	 '\tlocal success;\n',
+        	 '\tlocal cur_tile = GSMap.GetTileIndex(x,y);\n',
+        	 '\tsuccess = GSSign.BuildSign(cur_tile, label);\n\n',
+        	
+        	 '\tif (!success) {\n',
+        		 '\t\tprint(">Failed to add sign: " + label);\n',
+        	 '\t}\n\n',
+        	
+         '}\n'
+        
          ]
     
     
@@ -1114,3 +1133,166 @@ def build_canal_code(canals, x_header='X', y_header='Y'):
         
     return canal_code
     
+
+
+#### Create signs code
+
+def build_signs_code(signs, x_header='X', y_header='Y', label_header='label'):
+    '''
+    This function helps build the squirrel code function calls for PlaceSigns to place signs.
+
+    Parameters
+    ----------
+    canals : list, dataframe, xslx, csv
+        A data structure or path to xlsx or csv file containing x,y tile coordinates to build signs.
+    x_header : str, optional
+        Name or index of the industry X tile field header in the dataframe, xlsx, or CSV file. The default is 'X'.
+    y_header : str, optional
+        Name or index of the industry Y tile field header in the dataframe, xlsx, or CSV file. The default is 'Y'.
+    label_header : str, optional
+        Name or index of the industry label field header in the dataframe, xlsx, or CSV file. The default is 'label'.
+    Returns
+    -------
+    List of formatted string to insert into main.nut
+
+    '''
+    
+    print('Building code to add signs...')
+    
+    ### Check town data structures
+    if isinstance(signs, list):
+        for e in signs:
+            if not isinstance(e, list):
+                raise ValueError('Town list input must be a list of lists')
+        ## Check length of elements of list of lists
+        it = iter(signs)
+        the_len = len(next(it))
+        if the_len != 2:
+            raise ValueError('Lists must have 2 values')
+        if not all(len(l) == the_len for l in it):
+            raise ValueError('Town list of lists must be the same length')
+    
+    
+    ## check if xlsx or csv first, read into dataframe to check with dataframes
+    if isinstance(signs, str):
+        if not os.path.isfile(signs):
+            raise ValueError('signs path must be a valid xlsx or csv file.')
+        
+        match os.path.splitext(os.path.basename(signs))[1]:
+            case '.xlsx':
+                signs = pd.read_excel(signs) # assumes 1 sheet
+            case '.csv':
+                signs = pd.read_csv(signs)
+    
+    ## check if dataframe and valid column header names or indices
+    if isinstance(signs, pd.DataFrame):
+        if not x_header.isnumeric():
+            if not x_header in signs.columns:
+                raise ValueError('x_header must be valid column name')
+        if not y_header.isnumeric():
+            if not y_header in signs.columns:
+                raise ValueError('y_header must be valid column name')
+        
+        #### Add signs
+        
+        signs_code = [] # empty list to append
+        
+        ## if list of lists, loop through main list, values must be in the right order:
+        # X, Y, label
+        if isinstance(signs, list):
+            for s in signs:
+                sign_x = s[0]
+                sign_y = s[1]
+                label = s[2]
+                
+                try:
+                    sign_x = int(sign_x)
+                    sign_x = str(sign_x)
+                except:
+                    print('Error: X tile must be integer. Skipping.')
+                    continue
+                try:
+                    sign_y = int(sign_y)
+                    sign_y = str(sign_y)
+                except:
+                    print('Error: Y tile must be integer. Skipping.')
+                    continue
+                
+            
+                line = '\tPlaceSign('+sign_x+','+sign_y+','+'"'+str(label)+'"'+');\n'
+                signs_code.append(line)
+        
+        ## route for dataframes
+        elif isinstance(signs, pd.DataFrame):
+            for index, row in signs.iterrows():
+                
+                ## check if index or name
+                if x_header.isnumeric():
+                    sign_x = row.iloc[x_header]
+                else:
+                    sign_x = row[x_header]
+                    
+                if y_header.isnumeric():
+                    sign_y = row.iloc[y_header]
+                else:
+                    sign_y = row[y_header]
+                    
+                if label_header.isnumeric():
+                    label = row.iloc[label_header]
+                else:
+                    label = row[label_header]
+                    
+                
+                ## check if multiple row,col pairs given for a single row
+                ## if lists, loop through the pairs in the list
+                if (isinstance(sign_x, list) and not isinstance (sign_y,list)) or (isinstance(sign_y, list) and not isinstance (sign_x,list)):
+                    raise ValueError('Both X and Y columns must be lists if one is a list.')
+                elif (isinstance(sign_x, list) and isinstance(sign_y, list)):
+                    if len(sign_x) != len(sign_y):
+                        raise ValueError('Multipoint lists must have the same number of row as col')
+                    
+                    for i in range(len(sign_x)):
+                        sign_x_i = sign_x[i]
+                        sign_y_i = sign_y[i]
+                    
+                        ## check values
+                        try:
+                            sign_x_i = int(sign_x_i)
+                            sign_x_i = str(sign_x_i)
+                        except:
+                            print('Error: X tile must be integer. Skipping.')
+                            continue
+                        try:
+                            sign_y_i = int(sign_y_i)
+                            sign_y_i = str(sign_y_i)
+                        except:
+                            print('Error: Y tile must be integer. Skipping.')
+                            continue
+                            
+                        
+                        line = '\tPlaceSign('+sign_x_i+','+sign_y_i+','+'"'+str(label)+'"'+');\n'
+                        signs_code.append(line)
+                        
+                else:
+                    ## check values
+                    try:
+                        sign_x = int(sign_x)
+                        sign_x = str(sign_x)
+                    except:
+                        print('Error: X tile must be integer. Skipping.')
+                        continue
+                    try:
+                        sign_y = int(sign_y)
+                        sign_y = str(sign_y)
+                    except:
+                        print('Error: Y tile must be integer. Skipping.')
+                        continue
+                        
+                    
+                    line = '\tPlaceSign('+sign_x+','+sign_y+','+'"'+str(label)+'"'+');\n'
+                    signs_code.append(line)
+        
+        
+    print('Done.')
+        
+    return signs_code
