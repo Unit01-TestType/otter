@@ -2,6 +2,11 @@
 This script contains a function to extract the row,col indices from a scaled map.
 This function can be used to find the row,col indices on the game map for towns
 and industries using real-world coordinates.
+
+The OTTD grid coordinate system has the same origin as numpy data arrays
+where the top left is 0,0. Therefore, raster array rows coorespond with
+OTTD X coordinates and columns correspond with OTTD Y coordinates.
+
 '''
 
 '''

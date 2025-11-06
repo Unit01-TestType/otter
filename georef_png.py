@@ -2,6 +2,7 @@
 '''
 This script contains a function to automatically georeference the png output from bother
 back to a tif using the tif output from bother as a template for georeferencing.
+
 '''
 
 import rasterio as rio

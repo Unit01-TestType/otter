@@ -5,7 +5,7 @@ and create a png and tif raster for the heightmap.
 bother: https://github.com/bunburya/bother/tree/master
 
 TODO:
-    -
+    - allow bounds to be read from shapefile directly
 '''
 
 
@@ -136,6 +136,7 @@ def bother(outfile, bounds=None, outfile_tif=None, infile_tif=None, scale_data=N
     '''
     tmp_file = None
     
+    ## if bouding box is provided, create a tif from SRTM data
     if bounds:
         if outfile_tif:
             to_file = os.path.abspath(outfile_tif)
@@ -144,6 +145,7 @@ def bother(outfile, bounds=None, outfile_tif=None, infile_tif=None, scale_data=N
             tmp_file = to_file
         lat1, lon1, lat2, lon2 = bounds
         tif_file = create_tif_file(lon1, lat1, lon2, lat2, to_file)
+    ## else if bounds is None, use existing infile_tif file
     else:
         tif_file = infile_tif
 

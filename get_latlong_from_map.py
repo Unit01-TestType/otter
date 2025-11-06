@@ -2,6 +2,11 @@
 This script contains a function to convert row,col indices from a scaled map to
 real-world latitude and longitude.
 
+Example use case:
+    - Record the row,col of manually placed features in Scenario Building
+      and use this function to convert those coordinates to real-world
+      lat-long and shapefile that can be added to a GIS map for viewing
+
 '''
 
 '''

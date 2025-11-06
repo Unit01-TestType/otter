@@ -476,7 +476,8 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
 #### Create towns code
 
 def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_header='Size',
-                     city_header='City',town_name_header='Name',town_pop_header='Population'):
+                     city_header='City',town_name_header='Name',town_pop_header='Population',
+                     select_col=None, select_val=None):
     '''
     
 
@@ -497,6 +498,10 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
         Name or index of the town name field header in the dataframe, xlsx, or CSV file. The default is 'Name'.
     town_pop_header : str, optional
         Name or index of the town target population field header in the dataframe, xlsx, or CSV file. The default is 'Population'. If None, this is ignored.
+    select_col : str, optional
+        Name or index of the column to select rows with values from select_val in the dataframe, xlsx, or CSV value. The defualt is None.
+    select_val : str, optional
+        Value to filter the dataframe, xlsx, or CSV value. The default is None.
 
     Returns
     -------
@@ -557,6 +562,10 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                 if not town_pop_header in towns.columns:
                     raise ValueError('town_pop_header must be valid column name')
                     
+        if select_col is not None:
+            if not select_col.isnumeric():
+                if not select_col in towns.columns:
+                    raise ValueError('select_col must be valid column name')
                     
         #### Add towns
         
@@ -629,6 +638,10 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
         
         ## route for dataframes
         elif isinstance(towns, pd.DataFrame):
+            ## if filter parameter given, filter dataframe
+            if select_col is not None:
+                towns = towns.loc[towns[select_col] == select_val]
+                
             for index, row in towns.iterrows():
                 
                 ## check if index or name
