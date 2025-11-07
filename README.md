@@ -55,7 +55,7 @@ the tools in otter, but having a firm grasp of GIS concepts and software will he
 to unlock the full potential of otter in your map-making workflows. Much otter revolves around data 
 transformations of real-world coordinates into game-grid coordinates.
 
-Otter is linked with [https://github.com/bunburya/bother](unburya's Bother) to provide a pure pythonic method of downloading
+Otter utilizes [Bother by Bunyura](https://github.com/bunburya/bother) to provide a pure pythonic method of downloading
 SRTM terrain data and scaling images to quickly develop heightmaps
 
 Otter can be used to:
