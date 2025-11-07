@@ -14,7 +14,7 @@
 <!-- PROJECT LOGO -->
 
 
-# **otter**: **O**pen**TT**d map mak**ER** tools
+# **otter** -- **O**pen**TT**d map mak**ER** tools
 
 <!-- TABLE OF CONTENTS -->
 <details>
