@@ -24,22 +24,27 @@ def add_land(ras, shp_path, outpath, elevation=1, select_col=None, select_val=No
 
     Parameters
     ----------
-    ras : str, path
+    **ras** : *str, path*;
         path to a raster file from georeferenced png output from bother OR an original data raster.
-    shp_path : str, path
+        
+    **shp_path** : *str, path*;
         path to a shapefile containing polygons for areas to convert to land.
-    outpath : str, path
+        
+    **outpath** : *str, path*;
         path to write a new tif.
-    elevation : int, float
+        
+   **elevation** : *int, float*;
         1-255 for grayscale to edit scaled outputs from bother; if editting data rasters, rerun through bother to convert to grayscale
-    select_col : str
+        
+    **select_col** : *str*;
         column name to filter values
-    select_val : str, int, float
+        
+    **select_val** : *str, int, float*;
         value used to fitler values in select_col
 
     Returns
     -------
-    None.
+    Writes GeoTIFF.
 
     '''
     

@@ -27,17 +27,22 @@ def add_water(ras, shp_path, outpath, select_col=None, select_val=None, buffer=N
 
     Parameters
     ----------
-    ras : str, path
+    **ras** : *str, path*;
         path to a raster file from georeferenced png output from bother.
-    shp_path : str, path
+        
+    **shp_path** : *str, path*;
         path to a shapefile containing river delineations or lake polygons.
-    outpath : str, path
+        
+    **outpath** : *str, path*;
         path to write a new tif.
-    select_col : str
+        
+    **select_col** : *str*;
         column name to filter values
-    select_val : str, int, float
+        
+    **select_val** : *str, int, float*;
         value used to fitler values in select_col
-    buffer : int
+        
+    **buffer** : *int*;
         If provided, creates a buffer around the inputs shapes of the indicated number of tiles.
 
     Returns

@@ -5,7 +5,7 @@ and industries using real-world coordinates.
 
 The OTTD grid coordinate system has the same origin as numpy data arrays
 where the top left is 0,0. Therefore, raster array rows coorespond with
-OTTD X coordinates and columns correspond with OTTD Y coordinates.
+OTTD X coordinates and columns correspond with OTTD Y coordinates (clockwise orientation)
 
 '''
 
@@ -32,28 +32,34 @@ import warnings
 def get_map_coords(ras, coords, outpath=None, lat_col=None, long_col=None, 
                    select_col=None, select_val=None):
     '''
-    This function finds row,col indicies of OTTD maps from given lat-long coordinates.
+    This function finds row,col indicies (clockwise) of OTTD maps from given lat-long coordinates.
 
     Parameters
     ----------
-    ras : str, path
+    **ras** : *str, path*;
         path to a raster created from georeferencing the png output of bother.
-    coords : str, dataframe, geodataframe, list
+        
+    **coords** : *str, dataframe, geodataframe, list*
         Path to a shapefile, CSV, or excel file or a dataframe or geodataframe or a list of longtitude-latitude pairs
-    outpath : str, path
+        
+    **outpath** : *str, path*;
         path to an ouput csv or excel file to write the row,col indices to
-    lat_col : str, optional
+        
+    **lat_col** : *str, optional*;
         name of the column containing the latitude. The default is None.
-    long_col : str, optional
+        
+    **long_col** : *str, optional*;
         name of the column containing the longitude. The default is None.
-    select_col : str
+        
+    **select_col** : *str*;
         column name to filter values
-    select_val : str, int, float
+        
+    **select_val** : *str, int, float*;
         value used to fitler values in select_col
 
     Returns
     -------
-    Dataframe with row,col indices
+    Dataframe with game-grid row,col indices (clockwise)
 
     '''
     

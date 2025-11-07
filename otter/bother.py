@@ -41,38 +41,51 @@ def bother(outfile, bounds=None, outfile_tif=None, infile_tif=None, scale_data=N
 
     Parameters
     ----------
-    bounds : list
+    **bounds** : *list*;
         Bounding box; bottom left and top right in lat long.
-    outfile : str, path
+        
+    **outfile** : *str, path*;
         The file to which the greyscale PNG image will be written.
-    outfile_tif : str, path
+        
+    **outfile_tif** : *str, path*
         Path to output tif file.
-    infile_tif : str, path, optional
+        
+    **infile_tif** : *str, path, optional*;
         Path to a tif file containing elevation data. The default is None.
-    scale_data : float, optional
-        >1 will upsample the data resolution; <1 downsample the data resolution. The default is None.
-    epsg : int, optional
+        
+    **scale_data** : *float, optional*;
+        more than 1 will upsample the data resolution; less than 1 downsample the data resolution. The default is None.
+        
+    **epsg** : *int, optional*;
         Coordinate Reference System EPSG code to project data. The default is '4326'.
-    raise_low : float, optional
+        
+    **raise_low** : *float, optional*;
         Values below the input will be rounded down to 0. The default is 0.
-    raise_undersea : int, optional
+        
+    **raise_undersea** : *int, optional*;
         Raise pixels with an elevation below zero (ie, land that is below sea-level) to the given level. The default is None.
-    no_sea : float, optional
+        
+    **no_sea** : *float, optional*;
         Raise pixels with low elevation so that they have a non-zero value in the resulting greyscale image. Only values with elevations above the above that value will be raised.
-    lakes : int, optional
+        
+    **lakes** : *int, optional*;
         Detect lakes and set to 0; provided value is the minimum number of contiguous pixels needed. The default is None.
-    max_brightness : int, optional
+        
+    **max_brightness** : *int, optional*;
         Set the highest point of the elevation to the provided value rather than 255. The default is None.
-    infile_png : str, path, optional
+        
+    **infile_png** : *str, path, optional*;
         Path to output png file. The default is None.
-    crop : TYPE, optional
+        
+    **crop** : *str, optional*;
         Crop the resulting image to WIDTH x HEIGHT. MODE determines which region of the image to crop to and must be one of nw, n, ne, e, c, w, sw, s, se. The default is None.
-    scale_image : str, optional
+        
+    **scale_image** : *str, optional*;
         Scale the resulting image to WIDTH x HEIGHT. The default is None.
 
     Returns
     -------
-    None.
+    Writes GeoTIFF and/or PNG.
 
     '''
     

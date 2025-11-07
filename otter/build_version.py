@@ -12,14 +12,15 @@ def build_version(outdir, version):
 
     Parameters
     ----------
-    outdir : str, path
+    **outdir** : *str, path*;
         Output directory to write the info.nut file.
-    version : str
+        
+    **version** : *str*;
         version of the gamescript.
 
     Returns
     -------
-    None.
+    Writes version.nut
 
     '''
     

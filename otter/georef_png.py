@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 '''
 This script contains a function to automatically georeference the png output from bother
 back to a tif using the tif output from bother as a template for georeferencing.
@@ -14,24 +14,28 @@ import numpy as np
 def georef_png(bother_tif, bother_png, png_scale, new_tif, crs='epsg:4326'):
     '''
     Georefenece the png output from bother and convert to tif for editing.
-    The resulting tif can be used used to extract row,col indices for towns and industry.
+    The resulting tif can be used used to extract game-grid row,col indices for towns and industry.
 
     Parameters
     ----------
-    bother_tif : str, path
+    **bother_tif** : *str, path*;
         path to the original tif output from bother.
-    bother_png : str, path
+        
+    **bother_png** : *str, path*;
         path to the original png output from bother.
-    png_scale : str
-        scale used to create the png in bother.
-    new_tif : TYPE
-        DESCRIPTION.
-    crs : TYPE, optional
-        DESCRIPTION. The default is '4326'.
+        
+    **png_scale** : *str*;
+        scale used to create the png in bother. 'widthxheight'
+        
+    **new_tif** : *str, path*;
+        file path to new tif to write or overwrite.
+        
+    **crs** : *str, optional*;
+        coordinate reference system by EPSG code. The default is 'epsg:4326'.
 
     Returns
     -------
-    None.
+    Writes GeoTIFF.
 
     '''
 

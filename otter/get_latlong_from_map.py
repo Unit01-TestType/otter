@@ -20,12 +20,10 @@ import os
 import rasterio as rio
 import rasterio.mask
 import numpy as np
-# import fiona
 from tqdm import tqdm
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
-import warnings
 
 
 def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=None,
@@ -37,24 +35,30 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
 
     Parameters
     ----------
-    ras : str, path
+    **ras** : *str, path*;
         path to a raster created from georeferencing the png output of bother.
-    grid_coords : str, dataframe, geodataframe, list
+        
+    **grid_coords** : *str, dataframe, geodataframe, list*
         Path to a shapefile, CSV, or excel file or a dataframe or geodataframe or a list of row,col pairs
-    outpath : str, path
+        
+    **outpath** : *str, path*;
         path to an ouput csv or excel file or shapefile to write the lat,long coords
-    row_col : str, optional
+        
+    **row_col** : *str, optional*;
         name of the column containing the row value. The default is None.
-    col_col : str, optional
+        
+    **col_col** : *str, optional*;
         name of the column containing the column value. The default is None.
-    select_col : str
+        
+    **select_col** : *str*;
         column name to filter values
-    select_val : str, int, float
+        
+    **select_val** : *str, int, float*;
         value used to fitler values in select_col
 
     Returns
     -------
-    Dataframe with long,lat coordinates
+    Dataframe with long,lat coordinates.
 
     '''
     

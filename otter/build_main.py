@@ -25,20 +25,24 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
 
     Parameters
     ----------
-    outdir : str, path
+    **outdir** : *str, path*;
         Output directory to write the main.nut file.
-    towns_code : list
+        
+    **towns_code** : *list*;
         A list containing formatted string to add town line code.
-    industry_code : list
+        
+    **industry_code** : *list*;
         A list containing formatted string to add industry line code.
-    canal_code : list
+        
+    **canal_code** : *list*;
         A list containing formatted string to add canal line code.
-    signs_code : list
+        
+    **signs_code** : *list*;
         A list containing formatted string to add signs line code.
 
     Returns
     -------
-    None.
+    Writes main.nut
 
     '''
     

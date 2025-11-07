@@ -12,30 +12,39 @@ def build_info(outdir, author, name, short_name, description, version='SELF_VERS
 
     Parameters
     ----------
-    outdir : str, path
+    **outdir** : *str, path*;
         Output directory to write the info.nut file.
-    author : str
+        
+    **author** : *str*;
         Author of the gamescript.
-    name : str
+        
+    **name** : *str*;
         Name of the gamescript.
-    short_name : str
+        
+    **short_name** : *str*;
         Short name of the gamescript, must be four letters.
-    description : str
+        
+    **description** : *str*;
         Brief description of the gamescript.
-    version : str, optional
+        
+    **version** : *str, optional*;
         The gamescript version. The default is 'SELF_VERSION' to get from version.nut.
-    date : str, optional
+        
+    **date** : *str, optional*;
         The date of the gamescript version. The default is ''.
-    API_version : str, optional
+        
+    **API_version** : *str, optional*;
         The API version to use for the gamescript. The default is '14'.
-    url : str, optional
+        
+    **url** : *str, optional*;
         URL to more informatoin for the gamescript or the author. The default is ''.
-    comment : str, optional
+        
+    **comment** : *str, optional*;
         Header block comment to include at the top of info.nut with formatting. The default is ''.
 
     Returns
     -------
-    None.
+    Writes info.nut
 
     '''
     

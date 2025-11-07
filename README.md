@@ -79,7 +79,7 @@ Otter was concieved after countless hours of searching old forum posts for infor
 about creating custom maps for OpenTTD. Unfortunately, I found that many of the methods and tools were 
 overly cumbersom, outdated, or simply no longer available.
 
-This project was inspired by ideas and concepts from previous attempts:
+This project was inspired by ideas and concepts from previous attempts of custom map and terrain generation:
 
 https://www.tt-forums.net/viewtopic.php?t=69007
 
@@ -95,7 +95,7 @@ https://github.com/internet-trains/terrain
 
 https://github.com/bunburya/bother
 
-It became increasing apparent that much of the dsicussion of newGRF and custom scenario development
+It became increasing apparent that much of the discussion of newGRF and custom scenario development
 takes place on the OpenTTD Discord server and is not easily indexed for research. For this reason,
 I wanted to make otter as accessible as possible for the OpenTTD community and provide this repository as a place
 to compile additional resources for custom map and scenario development to avoid "reinventing the wheel".

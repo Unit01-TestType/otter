@@ -30,27 +30,37 @@ def town_data_to_json(town_data, map_width, map_height, json_outfile,
 
     Parameters
     ----------
-    town_data : pandas dataframe
+    **town_data** : *str, path, dataframe*;
         table of town data as a path to a shapefile, CSV, excel file or a pandas dataframe or geodataframe.
-    map_width : str, int
+        
+    **map_width** : *str, int*;
         width of the intended map to convert coordinates. OTTD maps are described as width x height.
-    map_height : str, int
+        
+    **map_height** : *str, int*;
         height of the inteded map to convert coordinates. OTTD maps are described as width x height.
-    json_outfile : str, path
+        
+    **json_outfile** : *str, path*;
         name and path to the output .json file with .json extension
-    name_field : str, optional
+        
+    **name_field** : *str, optional*;
         name of the column defining the name of the town. The default is 'name'.
-    pop_field : str, optional
+        
+    **pop_field** : *str, optional*;
         name of the column defining the population. The default is 'population'.
-    city_field : str, optional
+        
+    **city_field** : *str, optional*;
         name of the column defining the true/false flag for cities . The default is 'city'.
-    x_field : str, optional
+        
+    **x_field** : *str, optional*;
         name of the column defining the x coordinate (height). The default is 'row'.
-    y_field : str, optional
+        
+    **y_field** : *str, optional*;
         name of the column defining the y coordinate (width). The default is 'col'.
-    select_col : str
+        
+    **select_col** : *str*;
         column name to filter values
-    select_val : str, int, float
+        
+    **select_val** : *str, int, float*;
         value used to fitler values in select_col
 
     Returns
