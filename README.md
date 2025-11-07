@@ -79,7 +79,7 @@ Otter was concieved after countless hours of searching old forum posts for infor
 about creating custom maps for OpenTTD. Unfortunately, I found that many of the methods and tools were 
 overly cumbersom, outdated, or simply no longer available.
 
-This project was inspired by ideas and concepts from previous attempts of custom map and terrain generation:
+This project was inspired by ideas and concepts from previous attempts at custom map and terrain generation:
 
 https://www.tt-forums.net/viewtopic.php?t=69007
 
@@ -384,6 +384,21 @@ and change the extension from .sav to .scn to convert it to a scenario.
 
 ## Additional Features
 
+### Data Types
+
+Many functions in otter are designed to take in a variety of data types including:
+- list or lists of lists (e.g. list of lat,long pairs)
+- Pandas Dataframes
+- Geopandas GeoDataframes
+- Paths to CSV and Excel files
+- Paths to shapefiles
+
+For data inputs with tables (e.g. Excel, CSV, Shapefiles), otter provides a method to filter
+the data dynamically rather than needed to filter the data before the function calls. Look
+for variables named *select_col* and *select_val* which define the field name to check
+and the value(s) to filter for, respectively. 
+
+
 ### get_latlong_from_map()
 
 This function converts row,column game-grid coordinates from a known, georeferenced heightmap
@@ -419,6 +434,24 @@ town_data_to_json(town_data, # data structure containing town data (shapefile, C
                   y_field='col', # name of the data field containing the y coordinate (col)
                   select_col=None,
                   select_val=None)
+```
+
+### create_random_points()
+
+This function helps to create random points that could be used for industry, town, or object placement.
+This function requires more advanced knowledge of GIS and takes in a shapefile defining zones
+to create the random points. You can specify the generation method, number of points, and
+other parameters used (sample_points from GeoPandas[https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoSeries.sample_points.html])
+
+```python
+create_random_points(ras, # raster tif created by bother
+                     zone_shp_path, # shapefile defining zone polygons
+                     zone_col, # shapefile attribute field with zone IDs
+                     methods=None, # random sampling method, defaults to 'uniform'
+                     outpath=None, # file path to save the output as CSV, Excel, or shapefile
+                     **kwargs, # keywrod arguments as dictionaries with sampling parameters
+                    )
+
 ```
 
 <!-- Future -->
