@@ -5,7 +5,8 @@ and create a png and tif raster for the heightmap.
 bother: https://github.com/bunburya/bother/tree/master
 
 TODO:
-    - allow bounds to be read from shapefile directly
+    - check CRS of geodataframes and shapefile and reproject to 4326 rather than force 4326 input
+
 '''
 
 
@@ -25,6 +26,9 @@ from otter.bother_utils.srtm import create_tif_file, clear_cache
 from otter.bother_utils.heightmap import (remove_sea, resample, reproject_raster, set_lakes_to_elev, raise_undersea_land,
                                     raise_low_pixels, to_png, crop_modes, crop_image, scale_image_f, png_to_file)
 
+import geopandas as gpd
+import pandas as pd
+
 # EPSG codes
 WGS84 = 4326  # Mercator - The default CRS used in the STRM data
 PSEUDO_MERCATOR = 3857  # Web Mercator - The projection used by Google Maps, OpenStreetMap, etc.
@@ -41,11 +45,11 @@ def bother(outfile, bounds=None, outfile_tif=None, infile_tif=None, scale_data=N
 
     Parameters
     ----------
-    **bounds** : *list*;
-        Bounding box; bottom left and top right in lat long.
-        
     **outfile** : *str, path*;
         The file to which the greyscale PNG image will be written.
+    
+    **bounds** : *list, GeoDataframe, str, path*;
+        Bounding box; bottom left and top right in lat long as a list, GeoDataframe, or path to a shapefile.
         
     **outfile_tif** : *str, path*
         Path to output tif file.
@@ -100,8 +104,32 @@ def bother(outfile, bounds=None, outfile_tif=None, infile_tif=None, scale_data=N
         error('bounds, infile_tif and infile_png are mutually exclusive.')
     
     if bounds is not None:
-        if len(bounds) != 4:
-            error('bounds must be a list of 4 values.')
+        ## check if list of lat,long
+        if isinstance(bounds, list):
+            if len(bounds) != 4:
+                error('bounds must be a list of 4 values.')
+        
+        ## check if geodataframe
+        elif isinstance(bounds, gpd.GeoDataFrame):
+            if bounds.crs != "EPSG:4326":
+                raise ValueError('Input GeoDataframe must use CRS EPSG 4326.')
+            if len(bounds) > 1:
+                raise ValueError('Only 1 boundary feature can be processed at a time. '+str(len(bounds))+' features provided.')
+            bounds = [bounds['minx'][0], bounds['miny'][0], bounds['maxx'][0], bounds['maxy'][0]]
+    
+        ## check if shapefile
+        elif isinstance(bounds, str):
+            ext = os.path.splitext(os.path.basename(bounds))[1]
+            if ext != '.shp':
+                raise ValueError('Input file path must be a shapefile.')
+            bounds = gpd.read_file(bounds)
+            if bounds.crs != "EPSG:4326":
+                raise ValueError('Input GeoDataframe must use CRS EPSG 4326.')
+            if len(bounds) > 1:
+                raise ValueError('Only 1 boundary feature can be processed at a time. '+str(len(bounds))+' features provided.')
+            bounds = [bounds['minx'][0], bounds['miny'][0], bounds['maxx'][0], bounds['maxy'][0]]
+        
+        
     
     if (scale_data is not None) and scale_data == 0:
         error('0 is invalid value for scaling.')
