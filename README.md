@@ -14,6 +14,7 @@
 <!-- PROJECT LOGO -->
 
 
+# **otter**: **O**pen**TT**d map mak**ER** tools
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -46,8 +47,6 @@
 
 <!-- ABOUT THE PROJECT -->
 
-Introducing **otter**: **O**pen**TT**d map mak**ER** tools
-
 ## About the Project
 Otter provides tools to help create real-world custom maps and scenarios in OpenTTD.
 Otter takes a GIS approach to custom map-making in OpenTTD. GIS knowledge is not required to use
@@ -74,6 +73,7 @@ about creating custom maps for OpenTTD. Unfortunately, I found that many of the 
 overly cumbersom, outdated, or simply no longer available.
 
 This project was inspired by ideas and concepts from previous attempts:
+
 https://www.tt-forums.net/viewtopic.php?t=69007
 
 https://www.tt-forums.net/viewtopic.php?f=29&t=70846
@@ -293,7 +293,7 @@ US West Coast.
                      description='A gamescript for a real-world West Coast scenario',
                      version='SELF_VERSION',
                      date='2024-12-16',
-                     API_version='1.11',
+                     API_version='14',
                      url='',
                      comment='')
 
@@ -416,7 +416,17 @@ town_data_to_json(town_data, # data structure containing town data (shapefile, C
 
 <!-- Future -->
 ## Future
-Details of future features and ongoing development will be described here...
+
+Planned features and revisions:
+- Overhaul and fix tools for random point generation
+- Add tools to automatically obtain and download city information based on bounding boxes
+- Refactor gamescript code so it looks like it was written by somemone who knows what they're doing...
+- Create templates and methods for extracting tile information from existing saves/scenarios
+    - extract list of towns with population, tile coordinates, and house and road layouts (tiles)
+    - extract list of industry, nearest town, and tile coordinates
+    - extract objects, signs, and other features
+- Creates templates and methods for extracting newGRF data into usable formats (not all newGRF data is publicly or easily availalbe)
+- Upload industry code references for common industry replacement sets
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

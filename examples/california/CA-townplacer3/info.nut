@@ -12,7 +12,7 @@ class FMainClass extends GSInfo {
 	function GetDate()			{ return "2024-12-16"; }
 	function CreateInstance()	{ return "MainClass"; }
 	function GetShortName() 	{ return "CATP"; }
-	function GetAPIVersion() 	{ return "1.11"; }
+	function GetAPIVersion() 	{ return "14"; }
 	function GetURL() 			{ return ""; }
 
 	function GetSettings() {

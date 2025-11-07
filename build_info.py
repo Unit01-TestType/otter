@@ -6,7 +6,7 @@ This is based on boiler plate provided by MinimalGS from Leif Linse.
 
 import os
 
-def build_info(outdir, author, name, short_name, description, version='SELF_VERSION', date='', API_version='1.11', url='', comment=''):
+def build_info(outdir, author, name, short_name, description, version='SELF_VERSION', date='', API_version='14', url='', comment=''):
     '''
     This function creates info.nut for a custom map gamescript
 
@@ -27,7 +27,7 @@ def build_info(outdir, author, name, short_name, description, version='SELF_VERS
     date : str, optional
         The date of the gamescript version. The default is ''.
     API_version : str, optional
-        The API version to use for the gamescript. The default is '1.11'.
+        The API version to use for the gamescript. The default is '14'.
     url : str, optional
         URL to more informatoin for the gamescript or the author. The default is ''.
     comment : str, optional
