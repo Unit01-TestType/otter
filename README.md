@@ -21,16 +21,20 @@
   <ol>
     <li>
       <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#motivation">Motivation</a></li>
+      </ul>
     </li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="#windows-installation">Installation</a></li>
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#additional-features">Additional Features</a></li>
+    <li><a href="#future">Future</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -41,17 +45,17 @@
 
 
 <!-- ABOUT THE PROJECT -->
-## About The Project
 
 Introducing **otter**: **O**pen**TT**d map mak**ER** tools
 
+## About the Project
 Otter provides tools to help create real-world custom maps and scenarios in OpenTTD.
 Otter takes a GIS approach to custom map-making in OpenTTD. GIS knowledge is not required to use
 the tools in otter, but having a firm grasp of GIS concepts and software will help
 to unlock the full potential of otter in your map-making workflows. Much otter revolves around data 
 transformations of real-world coordinates into game-grid coordinates.
 
-Otter is linked with Bunburya's Bother to provide a pure pythonic method of downloading
+Otter is linked with [https://github.com/bunburya/bother](unburya's Bother) to provide a pure pythonic method of downloading
 SRTM terrain data and scaling images to quickly develop heightmaps
 
 Otter can be used to:
@@ -71,11 +75,17 @@ overly cumbersom, outdated, or simply no longer available.
 
 This project was inspired by ideas and concepts from previous attempts:
 https://www.tt-forums.net/viewtopic.php?t=69007
+
 https://www.tt-forums.net/viewtopic.php?f=29&t=70846
+
 https://www.tt-forums.net/viewtopic.php?t=68926
+
 https://www.tt-forums.net/viewtopic.php?f=65&t=67181
+
 https://reddit.com/r/openttd/comments/gkw45v/any_tips_for_finding_where_real_world_towns/
+
 https://github.com/internet-trains/terrain
+
 https://github.com/bunburya/bother
 
 It became increasing apparent that much of the dsicussion of newGRF and custom scenario development
@@ -134,7 +144,7 @@ path that look something like this
 <!-- USAGE EXAMPLES -->
 ## Usage
 ### US West Coast Example
-The files for this example can be foundi in "Examples"
+The files for this example can be found in "Examples"
 
 This example requires the North American Industry Replacement Set (NAIS) newGRF.
 
@@ -373,16 +383,16 @@ This function converts row,column game-grid coordinates from a known, georeferen
 back to latitude (Y, column) and longitude (X, row). The game-grid coordinates must
 be from a map created from the same input heightmap and GeoTIFF.
 
-    ```python
-    get_latlong_from_map(ras, # raster GeoTIFF from Bother
-                         grid_coords, # data structure containing row and column indices (shapefile, CSV, Excel, Dataframe, or list of list pairs)
-                         outpath, # optional, a file path to write the output table
-                         row_col, # optional, name of the table column containing row indices
-                         col_col, # optional, name of the table column containing the column indices
-                         select_col, # optional, name of the column to filter data
-                         select_val) # optional, value to check select_col to filter data
-    # returns a dataframe with the longitude and latitude coordinates
-    ```
+```python
+get_latlong_from_map(ras, # raster GeoTIFF from Bother
+                     grid_coords, # data structure containing row and column indices (shapefile, CSV, Excel, Dataframe, or list of list pairs)
+                     outpath, # optional, a file path to write the output table
+                     row_col, # optional, name of the table column containing row indices
+                     col_col, # optional, name of the table column containing the column indices
+                     select_col, # optional, name of the column to filter data
+                     select_val) # optional, value to check select_col to filter data
+# returns a dataframe with the longitude and latitude coordinates
+```
 
 ### town_data_to_json()
 
@@ -390,19 +400,19 @@ This function converts town data from a common data structure into a .json file
 compatible with the new town import from file feature in the Scenario Builder.
 The row,col data can be obtained using get_map_coords().
 
-    ```python
-    town_data_to_json(town_data, # data structure containing town data (shapefile, CSV, Excel, or Dataframe)
-                      map_width, # width of the intended map to convert coordinates. OTTD maps are described as width x height (clockwise)
-                      map_height, # height of the intended map to convert coordinates. OTTD maps are described as width x height (clockwise)
-                      json_outfiel, # full file path for the output .json file with .json extension
-                      name_field='name', # name of the data field containing the town name
-                      pop_field='population', # name of the data field containing the town population
-                      city_field='city', # name of the data field containing true/false if the town should be a city
-                      x_field='row', # name of the data field containing the x coordinate (row)
-                      y_field='col', # name of the data field containing the y coordinate (col)
-                      select_col=None,
-                      select_val=None)
-    ```
+```python
+town_data_to_json(town_data, # data structure containing town data (shapefile, CSV, Excel, or Dataframe)
+                  map_width, # width of the intended map to convert coordinates. OTTD maps are described as width x height (clockwise)
+                  map_height, # height of the intended map to convert coordinates. OTTD maps are described as width x height (clockwise)
+                  json_outfiel, # full file path for the output .json file with .json extension
+                  name_field='name', # name of the data field containing the town name
+                  pop_field='population', # name of the data field containing the town population
+                  city_field='city', # name of the data field containing true/false if the town should be a city
+                  x_field='row', # name of the data field containing the x coordinate (row)
+                  y_field='col', # name of the data field containing the y coordinate (col)
+                  select_col=None,
+                  select_val=None)
+```
 
 <!-- Future -->
 ## Future
@@ -458,7 +468,7 @@ SOFTWARE.
 <!-- CONTACT -->
 ## Contact
 
-Unit01-TestType
+Unit01-TestType (DM on OpenTTD Discord)
 
 Project Link: [https://github.com/Unit01-TestType/otter](https://github.com/Unit01-TestType/otter)
 
@@ -469,9 +479,8 @@ Project Link: [https://github.com/Unit01-TestType/otter](https://github.com/Unit
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
-* []()
-* []()
+Huge thanks and credit to Bunburya for development of Bother which is modified and included in Otter.
+[https://github.com/bunburya/bother](https://github.com/bunburya/bother)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
