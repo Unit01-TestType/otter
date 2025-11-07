@@ -51,7 +51,7 @@
 Otter provides tools to help create real-world custom maps and scenarios in OpenTTD.
 Otter takes a GIS approach to custom map-making in OpenTTD. GIS knowledge is not required to use
 the tools in otter, but having a firm grasp of GIS concepts and software will help
-to unlock the full potential of otter in your map-making workflows. Much otter revolves around data 
+to unlock the full potential of otter in your map-making workflows. Much of otter revolves around data 
 transformations of real-world coordinates into game-grid coordinates.
 
 Otter utilizes [Bother by Bunyura](https://github.com/bunburya/bother) to provide a pure pythonic method of downloading
@@ -65,6 +65,13 @@ Otter can be used to:
 into game-grid coordinates compatible with the new JSON import tool
 - Convert other features from real-world coordinates or shapefiles into game-grid coordinates
 - Create a gamescript to import towns, industries, signs, and "high elevation water" (e.g. mountain lakes)
+
+
+**NOTE:**
+Otter is far from complete. I have much more experience with python and GIS than I do gamescript development and C++/Squirrel. 
+The gamescript code component of otter is by far the weakest part, but it works well enough to get the job done for now.
+I would greatly appreciate feedback and contributions to the gamescript code to improve functionality. 
+
 
 ### Motivation
 
@@ -114,7 +121,7 @@ Otter requires the following python packages:
 * pillow
 
 If you are using the Anaconda package manager for Windows, these packages should be installed 
-using conda forge when possible.
+using conda forge when possible. If you're totally new to python, [here is a beginner's guide to using Anaconda in Windows](https://www.anaconda.com/blog/anaconda-python-complete-beginners-guide)
 
 ### Windows Installation
 
@@ -425,7 +432,7 @@ Planned features and revisions:
     - extract list of towns with population, tile coordinates, and house and road layouts (tiles)
     - extract list of industry, nearest town, and tile coordinates
     - extract objects, signs, and other features
-- Creates templates and methods for extracting newGRF data into usable formats (not all newGRF data is publicly or easily availalbe)
+- Creates templates and methods for extracting newGRF data into usable formats (not all newGRF data is publicly or easily available)
 - Upload industry code references for common industry replacement sets
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
