@@ -54,7 +54,7 @@ the tools in otter, but having a firm grasp of GIS concepts and software will he
 to unlock the full potential of otter in your map-making workflows. Much of otter revolves around data 
 transformations of real-world coordinates into game-grid coordinates.
 
-Otter utilizes [Bother by Bunyura](https://github.com/bunburya/bother) to provide a pure pythonic method of downloading
+Otter utilizes [Bother by Bunburya](https://github.com/bunburya/bother) to provide a pure pythonic method of downloading
 SRTM terrain data and scaling images to quickly develop heightmaps
 
 Otter can be used to:
@@ -92,6 +92,8 @@ https://www.tt-forums.net/viewtopic.php?f=65&t=67181
 https://reddit.com/r/openttd/comments/gkw45v/any_tips_for_finding_where_real_world_towns/
 
 https://github.com/internet-trains/terrain
+
+https://tangrams.github.io/heightmapper/
 
 https://github.com/bunburya/bother
 
@@ -394,9 +396,10 @@ Many functions in otter are designed to take in a variety of data types includin
 - Paths to shapefiles
 
 For data inputs with tables (e.g. Excel, CSV, Shapefiles), otter provides a method to filter
-the data dynamically rather than needed to filter the data before the function calls. Look
-for variables named *select_col* and *select_val* which define the field name to check
-and the value(s) to filter for, respectively. 
+the data dynamically rather than needing to filter the data in the source file or
+before the function calls. Look for variables named *select_col* and *select_val* 
+which define the field name to check
+and the value(s) to filter table rows, respectively. 
 
 
 ### get_latlong_from_map()
@@ -426,7 +429,7 @@ The row,col data can be obtained using get_map_coords().
 town_data_to_json(town_data, # data structure containing town data (shapefile, CSV, Excel, or Dataframe)
                   map_width, # width of the intended map to convert coordinates. OTTD maps are described as width x height (clockwise)
                   map_height, # height of the intended map to convert coordinates. OTTD maps are described as width x height (clockwise)
-                  json_outfiel, # full file path for the output .json file with .json extension
+                  json_outfile, # full file path for the output .json file with .json extension
                   name_field='name', # name of the data field containing the town name
                   pop_field='population', # name of the data field containing the town population
                   city_field='city', # name of the data field containing true/false if the town should be a city
