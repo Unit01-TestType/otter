@@ -4,10 +4,11 @@ This is based on boiler plate provided by MinimalGS from Leif Linse.
 
 The boiler plate was editted to include custom functions to for adding towns and industries to user-specified locations.
 
-TODO:
+TODO (python):
     - add more options to input data for towns and industry (e.g. dictionary)
     
-    - add options to add place labels
+TODO (gamescript):
+    - add check to within X% of target to halt growing rather than just check if meet or exceed 
 
 '''
 
@@ -288,7 +289,7 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
          
          
          #### TryTown Function
-         'function MainClass::TryTown(x, y, size, city, name, target_pop) {\n',
+         'function MainClass::TryTown(x, y, size, city, name, target_pop, buffer) {\n',
              '\tlocal success = false;\n',
              '\tlocal timeout = 1000;\n',
              '\tlocal counter = 0;\n',
@@ -308,7 +309,7 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
     		 '\t\tif(target_pop > 0) {\n',
     			 '\t\t\tlocal town_id = GSTownList(); // full list of ids\n',
     			 '\t\t\tlocal pop = GSTown.GetPopulation(town_id.Begin()); // get population of most recent town with most recent id\n',
-    			 '\t\t\tif(pop < target_pop) {\n',
+    			 '\t\t\tif(pop < (target_pop*(1-buffer))) {\n',
     				 '\t\t\t\tlocal nhouses  = (target_pop - pop)/10;\n' ,
     				 '\t\t\t\tif(nhouses > 1) {\n',
     					 '\t\t\t\t\texp = GSTown.ExpandTown(town_id.Begin(), nhouses);\n',
@@ -481,7 +482,7 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
 
 def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_header='Size',
                      city_header='City',town_name_header='Name',town_pop_header='Population',
-                     select_col=None, select_val=None):
+                     pop_buffer_header=None, select_col=None, select_val=None):
     '''
     
 
@@ -502,6 +503,8 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
         Name or index of the town name field header in the dataframe, xlsx, or CSV file. The default is 'Name'.
     town_pop_header : str, optional
         Name or index of the town target population field header in the dataframe, xlsx, or CSV file. The default is 'Population'. If None, this is ignored.
+    pop_buffer_header : str, optional
+        Name or index of a buffer percentage (as decimal) for the game population to be within the target population. If not provided, it set to 0.
     select_col : str, optional
         Name or index of the column to select rows with values from select_val in the dataframe, xlsx, or CSV value. The defualt is None.
     select_val : str, optional
@@ -566,6 +569,12 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                 if not town_pop_header in towns.columns:
                     raise ValueError('town_pop_header must be valid column name')
                     
+        ## population target buffer optional
+        if pop_buffer_header is not None:
+            if not pop_buffer_header.isnumeric():
+                if not pop_buffer_header in towns.columns:
+                    raise ValueError('pop_buffer_header must be valid column name')
+            
         if select_col is not None:
             if not select_col.isnumeric():
                 if not select_col in towns.columns:
@@ -576,7 +585,7 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
         towns_code = [] # empty list to append
         
         ## if list of lists, loop through main list, values must be in the right order:
-            # X, Y, size, city_flag, name, pop
+            # X, Y, size, city_flag, name, pop, buffer
         if isinstance(towns, list):
             for t in towns:
                 town_x = t[0]
@@ -585,7 +594,9 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                 town_city = t[3]
                 town_name = str(t[4])
                 
-                if len(t) == 6:
+                
+                
+                if len(t) > 5:
                     town_pop = t[5]
                     try:
                         town_pop = int(round(float(town_pop),0))
@@ -593,8 +604,22 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                     except:
                         print('Error: Target population tile must be integer. Skipping.')
                         continue
+                    
+                    if len(t) == 7:
+                        town_buff = t[6]
+                        try:
+                            town_buff = float(town_buff)
+                            town_buff = str(town_buff)
+                        except:
+                            print('Error: Target population buffer must be float. Skipping.')
+                            continue
+                    else:
+                        town_buff = 0.0
+                    
                 else:
                     town_pop = '0' # ignore value
+                
+                
                 
                 try:
                     town_x = int(town_x)
@@ -637,7 +662,7 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                     continue
                 
             
-                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+');\n'
+                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+','+town_buff+');\n'
                 towns_code.append(line)
         
         ## route for dataframes
@@ -681,6 +706,14 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                         town_pop = row[town_pop_header]
                 else:
                     town_pop = '0' # ignore value
+                    
+                if pop_buffer_header is not None:
+                    if pop_buffer_header.isnumeric():
+                        town_buff = row.iloc[pop_buffer_header]
+                    else:
+                        town_buff = row[pop_buffer_header]
+                else:
+                    town_buff = '0.0' # ignore value
                     
                     
                 ## check values
@@ -730,9 +763,16 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                 except:
                     print('Error: Target population tile must be integer. Skipping.')
                     continue
+                
+                try:
+                    town_buff = float(town_buff)
+                    town_buff = str(town_buff)
+                except:
+                    print('Error: Target population buffer must be float. Skipping.')
+                    continue
                     
                 
-                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+');\n'
+                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+','+town_buff+');\n'
                 towns_code.append(line)
         
         
