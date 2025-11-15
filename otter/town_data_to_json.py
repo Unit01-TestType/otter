@@ -105,10 +105,25 @@ def town_data_to_json(town_data, map_width, map_height, json_outfile,
         raise ValueError('town_data must be a valid shapefile, CSV, Excel file, or pandas dataframe')
     
     
-    ## filter rows
+    
+    
+    ## filter rows for user-sepcified filtering
     if select_col is not None:
         print('Filtering rows...')
         town_data = town_data.loc[town_data[select_col] == select_val]
+        
+        
+        
+        
+    ## filter rows to remove invalid row,col indices
+    n_rows_before = len(town_data)
+    town_data = town_data.dropna(subset=[x_field,y_field]) # drop where nan
+    town_data = town_data.loc[ (town_data[x_field] > 0) & (town_data[x_field] <= int(map_height)) &
+                               (town_data[y_field] > 0) & (town_data[y_field] <= int(map_width)) ]
+    n_rows_after = len(town_data)
+    if (n_rows_before - n_rows_after) > 0:
+        print(str(n_rows_before - n_rows_after) + " rows with invalid row,col indices removed.")
+    
     
     
     
