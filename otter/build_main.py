@@ -488,26 +488,35 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
 
     Parameters
     ----------
-    towns : list, dataframe, xlsx, csv
+    **towns** : *list, dataframe, xlsx, csv*;
         A data structure or path to xlsx or csv file containing the information needed to place towns.
         Each entry must contain: tile X, tile Y, size (small, medium, large), boolean for city, unique name, and target population
-    town_x_header : str, optional
+        
+    **town_x_header** : *str, optional*;
         Name or index of the town X tile field header in the dataframe, xlsx, or CSV file. The default is 'X'.
-    town_y_header : str, optional
+        
+    **town_y_header** : *str, optional*;
         Name or index of the town Y tile field header in the dataframe, xlsx, or CSV file. The default is 'Y'.
-    town_size_header : str, optional
+        
+    **town_size_header** : *str, optional*;
         Name or index of the town size field header in the dataframe, xlsx, or CSV file. The default is 'Size'.
-    city_header : str, optional
+        
+    **city_header** : *str, optional*;
         Name or index of the city flag field header in the dataframe, xlsx, or CSV file. The default is 'City'.
-    town_name_header : str, optional
+        
+    **town_name_header** : *str, optional*;
         Name or index of the town name field header in the dataframe, xlsx, or CSV file. The default is 'Name'.
-    town_pop_header : str, optional
+        
+    **town_pop_header** : *str, optional*;
         Name or index of the town target population field header in the dataframe, xlsx, or CSV file. The default is 'Population'. If None, this is ignored.
-    pop_buffer_header : str, optional
+        
+    **pop_buffer_header** : *str, optional*;
         Name or index of a buffer percentage (as decimal) for the game population to be within the target population. If not provided, it set to 0.
-    select_col : str, optional
+        
+    **select_col** : *str, optional*;
         Name or index of the column to select rows with values from select_val in the dataframe, xlsx, or CSV value. The defualt is None.
-    select_val : str, optional
+        
+    **select_val** : *str, optional*;
         Value to filter the dataframe, xlsx, or CSV value. The default is None.
 
     Returns
@@ -790,22 +799,29 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
 
     Parameters
     ----------
-    industry : list, dataframe, xlsx, csv
+    **industry** : *list, dataframe, xlsx, csv*;
         A data structure or path to xlsx or csv file containing the information needed to place towns.
         Each entry must contain a unique name, X tile, Y tile, type code
-    ind_x_header : str, optional
+        
+    **ind_x_header** : *str, optional*;
         Name or index of the industry X tile field header in the dataframe, xlsx, or CSV file. The default is 'X'.
-    ind_y_header : str, optional
+        
+    **ind_y_header** : *str, optional*;
         Name or index of the industry Y tile field header in the dataframe, xlsx, or CSV file. The default is 'Y'.
-    ind_name_header : str, optional
+        
+    **ind_name_header** : *str, optional*;
         Name or index of the industry name field header in the dataframe, xlsx, or CSV file. The default is 'Name'.
-    ind_type_header : str, optional
+        
+    **ind_type_header** : *str, optional*;
         Name or index of the industry type field header in the dataframe, xlsx, or CSV file. The default is 'Type'.
-    trylevel_header : str, optional
+        
+    **trylevel_header** : *str, optional*;
         Name or index of the header containing the flag for leveling in the dataframe, xlsx, or CSV file. The defeault is 'Level'.
-    level_x2_header : str, optional
+        
+    **level_x2_header** : *str, optional*;
         Name or index of the header containing the number of tiles down for leveling in the dataframe, xlsx, or CSV file. The defeault is 'Level'.
-    level_y2_header : str, optional
+        
+    **level_y2_header** : *str, optional*;
         Name or index of the header containing the number of tiles across for leveling in the dataframe, xlsx, or CSV file. The defeault is 'Level'.
     
     Returns
@@ -1047,11 +1063,13 @@ def build_canal_code(canals, x_header='X', y_header='Y'):
 
     Parameters
     ----------
-    canals : list, dataframe, xslx, csv
+    **canals** : *list, dataframe, xslx, csv*;
         A data structure or path to xlsx or csv file containing x,y tile coordinates to build canals.
-    x_header : str, optional
+        
+    **x_header** : *str, optional*;
         Name or index of the industry X tile field header in the dataframe, xlsx, or CSV file. The default is 'X'.
-    y_header : str, optional
+        
+    **y_header** : *str, optional*;
         Name or index of the industry Y tile field header in the dataframe, xlsx, or CSV file. The default is 'Y'.
 
     Returns
@@ -1204,14 +1222,18 @@ def build_signs_code(signs, x_header='X', y_header='Y', label_header='label'):
 
     Parameters
     ----------
-    canals : list, dataframe, xslx, csv
+    **canals** : *list, dataframe, xslx, csv*;
         A data structure or path to xlsx or csv file containing x,y tile coordinates to build signs.
-    x_header : str, optional
+        
+    **x_header** : *str, optional*;
         Name or index of the industry X tile field header in the dataframe, xlsx, or CSV file. The default is 'X'.
-    y_header : str, optional
+        
+    **y_header** : *str, optional*;
         Name or index of the industry Y tile field header in the dataframe, xlsx, or CSV file. The default is 'Y'.
-    label_header : str, optional
+        
+    **label_header** : *str, optional*;
         Name or index of the industry label field header in the dataframe, xlsx, or CSV file. The default is 'label'.
+        
     Returns
     -------
     List of formatted string to insert into main.nut
