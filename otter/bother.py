@@ -22,6 +22,9 @@ from typing import Optional, Set, Tuple, List
 from PIL import Image
 from rasterio.io import MemoryFile
 
+from pyproj import CRS
+from pyproj.exceptions import CRSError
+
 from otter.bother_utils.srtm import create_tif_file, clear_cache
 from otter.bother_utils.heightmap import (remove_sea, resample, reproject_raster, set_lakes_to_elev, raise_undersea_land,
                                     raise_low_pixels, to_png, crop_modes, crop_image, scale_image_f, png_to_file)
@@ -133,6 +136,15 @@ def bother(outfile, bounds=None, outfile_tif=None, infile_tif=None, scale_data=N
     
     if (scale_data is not None) and scale_data == 0:
         error('0 is invalid value for scaling.')
+    
+        
+    ## convert ESPG code to int
+    try:
+        # Attempt to create a CRS object from the EPSG code
+        CRS.from_epsg(epsg)
+    except CRSError:
+        print('WARNING: Input EPSG code is invalid. Defaulting to 4326')
+        epsg='4326'
         
     
     if crop:
@@ -194,11 +206,18 @@ def bother(outfile, bounds=None, outfile_tif=None, infile_tif=None, scale_data=N
         with open(tif_file, 'rb') as f:
             #memfile = handle_nodata(MemoryFile(f))
             memfile = MemoryFile(f)
+            
+            ## get infile crs
+            with memfile.open() as msrc:
+                msrc_crs = msrc.crs 
+            
             if scale_data is not None:
                 memfile = resample(memfile, scale_data)
             if no_sea:
                 memfile = remove_sea(memfile)
-            if epsg and (epsg != WGS84):  # The SRTM data already uses WGS84 so no need to reproject to that 
+            # The SRTM data already uses WGS84 so no need to reproject to that 
+            # if the infile is also WGS84, also no need to reproject; this should preserve input dimensions
+            if (epsg and (epsg != str(WGS84))) or (msrc_crs != WGS84):  
                 memfile = reproject_raster(memfile, dst_crs=f'EPSG:{epsg}')
             if lakes:
                 memfile = set_lakes_to_elev(memfile, lakes)

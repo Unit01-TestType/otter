@@ -11,6 +11,7 @@ OTTD X coordinates and columns correspond with OTTD Y coordinates (clockwise ori
 
 '''
 TODO:
+    - return nearest land point if point on water
     - replace loop with something more efficient
     - add checks for shapefile CRS
     

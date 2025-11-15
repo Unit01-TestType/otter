@@ -202,7 +202,7 @@ US West Coast.
     ## Modify the GeoTIFF heightmap to add water by setting the
     ## pixel values to 0 (sea level) where the shapefile features overlap
     otter.add_water(ras=bother_tif,
-                    shp_path=r'US_rivers_all.shp', # shapefile with river features
+                    shp_path='US_rivers_all.shp', # shapefile with river features
                     outpath=bother_tif, # overwrite the existing raster heightmap
                     # filter the features in the shapefile (optional)
                     # to only look at features with a value of 'Yes' in the 'river' column
@@ -368,13 +368,14 @@ US West Coast.
     ```
 
 12. Open the Scenario Editor and load the heightmap PNG. Open the Gamescript settings
-and select the newly created gamescript. If the gamescript is not in the list, there is an
-error with the code somewhere. Manually add a dummy town somewhere in the scenario. This can
-be deleted later.
+and select the newly created gamescript. If the gamescript is not in the list, there may be an
+error with the code somewhere (close and reopen OTTD if the gamescript was created while the game was open). 
+Manually add a dummy town somewhere in the scenario. This can be deleted later.
 
 13. Save the scenario and then load the scenario as a new game. All of the features
 should begin to populate the map as the gamescript runs. This may take several minutes.
-when the gamescript is complete, save the game and then exit. Find the saved game file
+when the gamescript is complete, fast forward the game so that the populations update from
+the added houses. Save the game and then exit. Find the saved game file
 and change the extension from .sav to .scn to convert it to a scenario.
 
 14. Load the scenario and play the game!

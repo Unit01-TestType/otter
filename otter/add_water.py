@@ -88,7 +88,7 @@ def add_water(ras, shp_path, outpath, select_col=None, select_val=None, buffer=N
         out_image, out_transformation = rio.mask.mask(src, water_shapes, crop=False) # returns only values underlaying feature, otherwise 0
         out_meta = src.meta
         
-    print('Setting rivers to sea-level...')
+    print('Setting water to sea-level...')
     water_cells_idx = ~np.isnan(out_image)
     arr[water_cells_idx] = 0 # set cells to 0
     
