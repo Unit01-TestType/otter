@@ -8,7 +8,7 @@ TODO (python):
     - add more options to input data for towns and industry (e.g. dictionary)
     
 TODO (gamescript):
-    - add check to within X% of target to halt growing rather than just check if meet or exceed 
+    - add check if pop buffer is nan and set to 0
 
 '''
 
@@ -157,25 +157,25 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
     
     #### Add industries
     if industry_code is not None:
-        main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
+        # main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
         main_file.writelines(industry_code)
         main_file.write('\n\tprint("Finished adding industries.");\n\n')
-        main_file.write('\t// set bank balance back to starting balance\n')
-        main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
-        main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
-        main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
+        # main_file.write('\t// set bank balance back to starting balance\n')
+        ## main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
+        ## main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
+        ## main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
         
     
     #### Add canals
     if canal_code is not None:
-        main_file.write('\t// Start in deity mode to add funds. Then change to company mode to place canals.\n')
-        main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
+        # main_file.write('\t// Start in deity mode to add funds. Then change to company mode to place canals.\n')
+        # main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
         main_file.writelines(canal_code)
         main_file.write('\n\tprint("Finished adding canals.");\n\n')
-        main_file.write('\t// set bank balance back to starting balance\n')
-        main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
-        main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
-        main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
+        # main_file.write('\t// set bank balance back to starting balance\n')
+        # main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
+        # main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
+        # main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
 
     #### Add signs
     if signs_code is not None:
@@ -289,51 +289,85 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
          
          
          #### TryTown Function
-         'function MainClass::TryTown(x, y, size, city, name, target_pop, buffer) {\n',
+         'function MainClass::TryTown(x, y, size, city, name, target_pop, buffer, max_radius=100) {\n',
              '\tlocal success = false;\n',
-             '\tlocal timeout = 1000;\n',
-             '\tlocal counter = 0;\n',
              '\tlocal exp = false;\n\n',
-
-         '\twhile(!success && counter < timeout) {\n',
-             '\t\tlocal cur_tile = GSMap.GetTileIndex(x, y);\n',
-             '\t\tsuccess = GSTown.FoundTown(cur_tile, size, city, GSTown.ROAD_LAYOUT_BETTER_ROADS, name);\n',
-    		 '\t\t// move coordinates around until it places\n',
-             '\t\tx = x + GSBase.RandRange(3) - 1;\n',
-             '\t\ty = y + GSBase.RandRange(3) - 1;\n',
-             '\t\tcounter += 1;\n',
-         '\t}\n\n',
-	
-    	 '\t// Grow pop if town is built\n',
-         '\tif(success) {\n',
-    		 '\t\tif(target_pop > 0) {\n',
-    			 '\t\t\tlocal town_id = GSTownList(); // full list of ids\n',
-    			 '\t\t\tlocal pop = GSTown.GetPopulation(town_id.Begin()); // get population of most recent town with most recent id\n',
-    			 '\t\t\tif(pop < (target_pop*(1-buffer))) {\n',
-    				 '\t\t\t\tlocal nhouses  = (target_pop - pop)/10;\n' ,
-    				 '\t\t\t\tif(nhouses > 1) {\n',
-    					 '\t\t\t\t\texp = GSTown.ExpandTown(town_id.Begin(), nhouses);\n',
-    						 '\t\t\t\t\t\tif(!success) {\n',
-    							 '\t\t\t\t\t\t\tGSLog.Warning(name);\n',
-    						 '\t\t\t\t\t\t}\n',
-    				 '\t\t\t\t}\n',
-    			 '\t\t\t}\n',
-    		 '\t\t}\n',
-	     '\t}\n\n',
-	
-         '\tif(!success) {\n',
-             '\t\tGSLog.Warning(name);\n',
-         '\t}\n\n',
-		
+             
+             '\tlocal cur_tile = GSMap.GetTileIndex(x,y);\n',
+             '\tsuccess = GSTown.FoundTown(cur_tile, size, city, GSTown.ROAD_LAYOUT_BETTER_ROADS, name);\n\n',
+             
+             '\tif(!success) {\n',
+                 '\t\tsuccess = BuildTownNear(x, y, size, city, name, max_radius);\n',
+             '\t}\n\n'
+             
+        	 '\t// Grow town population incrementally to avoid overshoot\n',
+        	 '\tif (success && target_pop > 0) {\n\n',
+         
+        		 '\t\t// TownList().Begin() returns ID of newest town\n',
+        		 '\t\tlocal town_id = GSTownList().Begin();\n\n',
+        
+        		 '\t\tlocal pop = GSTown.GetPopulation(town_id);\n\n',
+        
+        		 '\t\t// Stop early if we are already within buffer range\n',
+        		 '\t\tlocal lower_limit = target_pop * (1 - buffer);\n\n',
+        
+        		 '\t\t// Expand slowly: max 3 houses per tick\n',
+        		 '\t\tlocal MAX_BATCH = 3;\n\n',
+        
+        		 '\t\t// Safety limit to prevent infinite loops\n',
+        		 '\t\tlocal SAFETY_LIMIT = 200;\n\n',
+        
+        		 '\t\tlocal attempts = 0;\n',
+        
+        		 '\t\twhile (pop < lower_limit && attempts < SAFETY_LIMIT) {\n\n',
+        
+        			 '\t\t\t// Number of houses to add this round\n',
+        			 '\t\t\tlocal needed = target_pop - pop;\n\n',
+        
+        			 '\t\t\t// Large towns need smaller steps (pop per house is bigger)\n',
+        			 '\t\t\tlocal step = 1;\n',
+        			 '\t\t\tif (needed > 3000) step = 1;\n',
+        			 '\t\t\telse if (needed > 1000) step = 2;\n',
+        			 '\t\t\telse step = 3;\n\n',
+        
+        			 '\t\t\t// Never exceed MAX_BATCH\n',
+        			 '\t\t\tstep = min(step, MAX_BATCH);\n\n',
+        
+        			 '\t\t\t// Expand town\n',
+        			 '\t\t\tlocal ok = GSTown.ExpandTown(town_id, step);\n\n',
+        
+        			 '\t\t\tif (!ok) {\n',
+        				 '\t\t\tGSLog.Warning("ExpandTown() failed for " + name);\n',
+        				 '\t\t\tbreak;\n',
+        			 '\t\t\t}\n\n',
+        
+        			 '\t\t\tattempts++;\n\n',
+        
+        			 '\t\t\t// Recalculate population after expansion\n',
+        			 '\t\t\tpop = GSTown.GetPopulation(town_id);\n\n',
+        
+        		 '\t\t}\n\n',
+        		
+        		 '\t\t/*\n',
+        		 '\t\tGSLog.Info("Final population of " + name +\n',
+        				    '\t\t" = " + pop +\n',
+        				    '\t\t" (target " + target_pop +\n',
+        				    '\t\t", attempts " + attempts + ").");\n',
+        		 '\t\t*/\n',
+        	 '\t}\n\n\n',
+        
+        	
+        	 '\tif(!success) {\n',
+        		 '\t\tGSLog.Warning("Failed to place: " + name);\n',
+        	 '\t}\n\n',
+            
          '}\n\n\n',
          
          
          
-         ##### TryIndustry Function
-         'function MainClass::TryIndustry(x, y, name, type, trylevel, level_x2, level_y2) {\n',
+         #### TryIndustry Function
+         'function MainClass::TryIndustry(x, y, name, type, trylevel, level_x2, level_y2, max_radius=100) {\n',
         	 '\tlocal success = false;\n',
-             '\tlocal timeout = 3000;\n',
-             '\tlocal counter = 0;\n\n',
              '\tlocal xw = x;\n',
              '\tlocal yw = y;\n',
              '\tlocal xl = x;\n',
@@ -341,17 +375,6 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
         
         	 '\tlocal cur_tile = GSMap.GetTileIndex(x, y);\n',
         	 '\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n\n',
-        	 '\tif(success) {\n',
-        		 '\t\treturn success;\n',
-        	 '\t}\n',
-             '\twhile(!success && counter < timeout) {\n',
-				 '\t\tcur_tile = GSMap.GetTileIndex(xw, yw);\n',
-				 '\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n',
-				 '\t\t// move coordinates around until it places\n',
-				 '\t\txw = xw + GSBase.RandRange(3) - 1;\n',
-				 '\t\tyw = yw + GSBase.RandRange(3) - 1;\n',
-				 '\t\tcounter += 1;\n',
-			 '\t}\n',
         
         	 '\tif(success) {\n',
         		 '\t\t// print("Success");\n',
@@ -365,30 +388,28 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
         		 '\t\t\tlevel_success = LevelTiles(x, y, x2, y2)\n\n',
         
         		 '\t\t\tif (level_success) {\n',
-        			 '\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n',
-                     '\t\t\t\tcounter = 0;\n'
-    				 '\t\t\t\twhile(!success && counter < timeout) {\n'
-    					 '\t\t\t\t\tcur_tile = GSMap.GetTileIndex(xl, yl);\n'
-    					 '\t\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n'
-    					 '\t\t\t\t\t// move coordinates around until it places\n'
-    					 '\t\t\t\t\txl = xl + GSBase.RandRange(3) - 1;\n'
-    					 '\t\t\t\t\tyl = yl + GSBase.RandRange(3) - 1;\n'
-    					 '\t\t\t\t\tcounter += 1;\n'
-    				 '\t\t\t\t}\n'		
+        			 '\t\t\t\tsuccess = GSIndustryType.BuildIndustry(type, cur_tile);\n\n',
+	
         			 '\t\t\t\tif (success) {\n',
-        				 '\t\t\t\t\t//print("Successfully added industry after leveling.");\n',
+        				 '\t\t\t\t\treturn success;\n',
         			 '\t\t\t\t} else {\n',
-        				 '\t\t\t\t\tprint("Failed to add industry after leveling: " + name);\n',
-        			 '\t\t\t\t}\n',
+                         '\t\t\t\t\tsuccess = BuildIndustryNear(x, y, name, type, max_radius);\n',
+        				 '\t\t\t\t\t//print("Failed to add industry after leveling: " + name);\n',
+        			 '\t\t\t\t}\n\n',
+                     
         		 '\t\t\t} else {\n',
         			 '\t\t\t\tprint("Leveling failed. Could not place industry: " + name);\n',
+                     '\t\t\t\tsuccess = BuildIndustryNear(x, y, name, type, max_radius);\n',
         		 '\t\t\t}\n\n',
         
           		 '\t\t} else {\n\n',
           			 
-          			 '\t\t\tif (!success){\n',
-          				 '\t\t\t\tprint("Failed to add industry: " + name);\n',
-          			 '\t\t\t}\n',
+          			 '\t\t\t// if not trying to level tiles, do a spiral search\n',
+          			 '\t\t\tsuccess = BuildIndustryNear(x, y, name, type, max_radius);\n\n',
+                           
+                     '\t\t\t// if (!success){\n',
+                     '\t\t\t\t// print("Failed to add industry: " + name);\n',
+                     '\t\t\t// }\n'
           		 '\t\t}\n',
         	 '\t}\n\n',
         		
@@ -414,7 +435,7 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
         		# '\t\t//print(">Could not build canal at " + x + " " +y);\n',
         	 # '\t}\n\n',
         	
-         '}\n\n',
+         '}\n\n\n',
          
         '// function for leveling tiles\n',
         '// used to help level terrain to place industries\n',
@@ -448,7 +469,7 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
         	
         	'\treturn success;\n\n',
         	
-        '}',
+        '}\n\n\n',
          
          '// function for placing POI signs to the map\n',
          'function MainClass::PlaceSign(x,y,label) {\n\n',
@@ -461,7 +482,276 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
         		 '\t\tprint(">Failed to add sign: " + label);\n',
         	 '\t}\n\n',
         	
-         '}\n'
+         '}\n\n\n'
+         
+         #### TryBuildTownAt
+         '// helper function for BuildTownNear\n',
+         'function MainClass::TryBuildTownAt(tx, ty, size, city, name) {\n',
+             '\tlocal map_w = GSMap.GetMapSizeX();\n',
+             '\tlocal map_h = GSMap.GetMapSizeY();\n\n',
+
+             '\t// Skip out-of-bounds\n',
+             '\tif (tx < 0 || ty < 0 || tx >= map_w || ty >= map_h)\n',
+                 '\t\treturn false;\n\n',
+
+             '\tlocal tile = GSMap.GetTileIndex(tx, ty);\n\n',
+
+             '\t// Attempt to found the town\n',
+             '\tlocal success = GSTown.FoundTown(tile, size, city,\n',
+                               '\t\t\t\t\t\t\t\t\tGSTown.ROAD_LAYOUT_BETTER_ROADS, name);\n\n',
+
+             '\tif (success) {\n',
+                 '\t\t// GSLog.Info(name + " built at (" + tx + ", " + ty + ").");\n',
+                 '\t\treturn true;\n',
+             '\t}\n\n',
+
+             '\treturn false;\n',
+        '}\n\n\n',
+
+
+
+        #### BuildTownNear
+        '// function to find suitable tiles to build a town using a spiral search\n',
+        'function MainClass::BuildTownNear(x, y, size, city, name, max_radius=null) {\n\n',
+
+             '\tlocal map_w = GSMap.GetMapSizeX();\n',
+             '\tlocal map_h = GSMap.GetMapSizeY();\n',
+             '\tlocal start_tile = GSMap.GetTileIndex(x, y);\n\n',
+
+             '\t// --- Try the starting tile first ---\n',
+             '\tif (GSTown.FoundTown(start_tile, size, city,\n',
+                       '\t\t\t\t\t\t GSTown.ROAD_LAYOUT_BETTER_ROADS, name)) {\n',
+                 '\t\t// GSLog.Info(name + " built at starting point (" + x + ", " + y + ").");\n',
+                 '\t\treturn true;\n',
+             '\t}\n\n',
+
+             '\t// Determine max search radius if not given\n',
+             '\tif (max_radius == null) {\n',
+                 '\t\tmax_radius = map_w + map_h;\n',
+             '\t}\n\n',
+
+             '\t// Current spiral coordinates\n',
+             '\tlocal cx = x;\n',
+             '\tlocal cy = y;\n',
+             '\tlocal next_tile = GSMap.GetTileIndex(cx, cy);\n\n',
+
+             '\t// Spiral step length\n',
+             '\tlocal step = 1;\n\n',
+
+             '\t// Track current Manhattan radius from the center\n',
+             '\tlocal radius = 0;\n\n',
+
+             '\twhile (radius <= max_radius) {\n\n',
+
+                 '\t\t//\n',
+                 '\t\t// ----- Step 1: Move RIGHT by \'step\' tiles -----\n',
+                 '\t\t//\n',
+                 '\t\tfor (local i = 0; i < step; i++) {\n',
+                     '\t\t\tcx++;\n',
+                     '\t\t\t// radius check\n',
+                     '\t\t\tnext_tile = GSMap.GetTileIndex(cx, cy);\n',
+                     '\t\t\tradius = GSMap.DistanceManhattan(start_tile, next_tile);\n',
+                     '\t\t\tif (radius > max_radius) return false;\n\n',
+
+                     '\t\t\tlocal res = TryBuildTownAt(cx, cy, size, city, name);\n',
+                     '\t\t\tif (res) {\n',
+                         '\t\t\t\t// GSLog.Info(name + " built at spiral tile (" + cx + ", " + cy + ").");\n',
+                         '\t\t\t\treturn true;\n',
+                     '\t\t\t}\n',
+                '\t\t}\n\n',
+
+                '\t\t//\n',
+                '\t\t// ----- Step 2: Move DOWN by \'step\' tiles -----\n',
+                '\t\t//\n',
+                '\t\tfor (local i = 0; i < step; i++) {\n',
+                     '\t\t\tcy++;\n',
+                     '\t\t\tnext_tile = GSMap.GetTileIndex(cx, cy);\n',
+                     '\t\t\tradius = GSMap.DistanceManhattan(start_tile, next_tile);\n',
+                     '\t\t\tif (radius > max_radius) return false;\n\n',
+
+                     '\t\t\tlocal res = TryBuildTownAt(cx, cy, size, city, name);\n',
+                     '\t\t\tif (res) {\n',
+                         '\t\t\t\t// GSLog.Info(name + " built at spiral tile (" + cx + ", " + cy + ").");\n',
+                         '\t\t\t\treturn true;\n',
+                     '\t\t\t}\n',
+                '\t\t}\n\n',
+
+                '\t\t// Increase step after two directions\n',
+                '\t\tstep++;\n\n',
+
+                '\t\t//\n',
+                '\t\t// ----- Step 3: Move LEFT by \'step\' tiles -----\n',
+                '\t\t//\n',
+                '\t\tfor (local i = 0; i < step; i++) {\n',
+                     '\t\t\tcx--;\n',
+                     '\t\t\tnext_tile = GSMap.GetTileIndex(cx, cy);\n',
+                     '\t\t\tradius = GSMap.DistanceManhattan(start_tile, next_tile);\n',
+                     '\t\t\tif (radius > max_radius) return false;\n\n',
+
+                     '\t\t\tlocal res = TryBuildTownAt(cx, cy, size, city, name);\n',
+                     '\t\t\tif (res) {\n',
+                         '\t\t\t\t// GSLog.Info(name + " built at spiral tile (" + cx + ", " + cy + ").");\n',
+                         '\t\t\t\treturn true;\n',
+                     '\t\t\t}\n',
+                '\t\t}\n\n',
+
+                '\t\t//\n',
+                '\t\t// ----- Step 4: Move UP by \'step\' tiles -----\n',
+                '\t\t//\n',
+                '\t\tfor (local i = 0; i < step; i++) {\n',
+                     '\t\t\tcy--;\n',
+                     '\t\t\tnext_tile = GSMap.GetTileIndex(cx, cy);\n',
+                     '\t\t\tradius = GSMap.DistanceManhattan(start_tile, next_tile);\n',
+                     '\t\t\tif (radius > max_radius) return false;\n\n',
+
+                     '\t\t\tlocal res = TryBuildTownAt(cx, cy, size, city, name);\n',
+                     '\t\t\tif (res) {\n',
+                         '\t\t\t\t// GSLog.Info(name + " built at spiral tile (" + cx + ", " + cy + ").");\n',
+                         '\t\t\t\treturn true;\n',
+                     '\t\t\t}\n',
+                '\t\t}\n\n',
+
+                '\t\t// Increase step again\n',
+                '\t\tstep++;\n',
+             '\t}\n\n',
+
+             '\tGSLog.Error("No suitable location for " + name + ".");\n',
+             '\treturn false;\n',
+        '}\n\n\n',
+
+
+
+        #### TryBuildIndustryAt
+        '// helper function for BuildIndustryNear\n',
+        'function MainClass::TryBuildIndustryAt(tx, ty, type, name) {\n',
+             '\tlocal map_w = GSMap.GetMapSizeX();\n',
+             '\tlocal map_h = GSMap.GetMapSizeY();\n\n',
+
+             '\t// Skip out-of-bounds\n',
+             '\tif (tx < 0 || ty < 0 || tx >= map_w || ty >= map_h)\n',
+                 '\t\treturn false;\n\n',
+
+             '\tlocal tile = GSMap.GetTileIndex(tx, ty);\n\n',
+
+             '\t// Attempt to build the industry\n',
+             '\tlocal success = GSIndustryType.BuildIndustry(type, tile);\n\n',
+
+             '\tif (success) {\n',
+                 '\t\t// GSLog.Info(name + " built at (" + tx + ", " + ty + ").");\n',
+                 '\t\treturn true;\n',
+             '\t}\n\n',
+
+             '\treturn false;\n',
+        '}\n\n\n',
+
+
+
+        #### BuildIndustryNear
+        '// function to find suitable tiles to build an industry using a spiral search\n',
+        'function MainClass::BuildIndustryNear(x, y, name, type, max_radius=null) {\n\n',
+
+             '\tlocal map_w = GSMap.GetMapSizeX();\n',
+             '\tlocal map_h = GSMap.GetMapSizeY();\n',
+             '\tlocal start_tile = GSMap.GetTileIndex(x, y);\n\n',
+
+             '\t// --- Try the starting tile first ---\n',
+             '\tif (GSIndustryType.BuildIndustry(type, start_tile)) {\n',
+             '\t\t// GSLog.Info(name + " built at starting point (" + x + ", " + y + ").");\n',
+             '\t\treturn true;\n',
+             '\t}\n\n',
+
+             '\t// Determine max search radius if not given\n',
+             '\tif (max_radius == null) {\n',
+                 '\t\tmax_radius = map_w + map_h;\n',
+             '\t}\n\n',
+
+             '\t// Current spiral coordinates\n',
+             '\tlocal cx = x;\n',
+             '\tlocal cy = y;\n',
+             '\tlocal next_tile = GSMap.GetTileIndex(cx, cy);\n\n',
+
+             '\t// Spiral step length\n',
+             '\tlocal step = 1;\n\n',
+
+             '\t// Track current Manhattan radius from the center\n',
+             '\tlocal radius = 0;\n\n',
+ 
+             '\twhile (radius <= max_radius) {\n\n',
+
+                 '\t\t//\n',
+                 '\t\t// ----- Step 1: Move RIGHT by \'step\' tiles -----\n',
+                 '\t\t//\n',
+                 '\t\tfor (local i = 0; i < step; i++) {\n',
+                     '\t\t\tcx++;\n',
+                     '\t\t\tnext_tile = GSMap.GetTileIndex(cx, cy);\n',
+                     '\t\t\tradius = GSMap.DistanceManhattan(start_tile, next_tile);\n',
+                     '\t\t\tif (radius > max_radius) return false;\n\n',
+
+                     '\t\t\tlocal res = TryBuildIndustryAt(cx, cy, type, name);\n',
+                     '\t\t\tif (res) {\n',
+                         '\t\t\t\t// GSLog.Info(name + " built at spiral tile (\" + cx + \", \" + cy + \").");\n',
+                         '\t\t\t\treturn true;\n',
+                     '\t\t\t}\n',
+                 '\t\t}\n\n',
+
+                 '\t\t//\n',
+                 '\t\t// ----- Step 2: Move DOWN by \'step\' tiles -----\n',
+                 '\t\t//\n',
+                 '\t\tfor (local i = 0; i < step; i++) {\n',
+                     '\t\t\tcy++;\n',
+                     '\t\t\tnext_tile = GSMap.GetTileIndex(cx, cy);\n',
+                     '\t\t\tradius = GSMap.DistanceManhattan(start_tile, next_tile);\n',
+                     '\t\t\tif (radius > max_radius) return false;\n\n',
+
+                     '\t\t\tlocal res = TryBuildIndustryAt(cx, cy, type, name);\n',
+                     '\t\t\tif (res) {\n',
+                         '\t\t\t\t// GSLog.Info(name + " built at spiral tile (" + cx + ", " + cy + ").");\n',
+                         '\t\t\t\treturn true;\n',
+                     '\t\t\t}\n',
+                 '\t\t}\n\n',
+
+                 '\t\t// Increase step after two directions\n',
+                 '\t\tstep++;\n\n',
+
+                 '\t\t//\n',
+                 '\t\t// ----- Step 3: Move LEFT by \'step\' tiles -----\n',
+                 '\t\t//\n',
+                 '\t\tfor (local i = 0; i < step; i++) {\n',
+                     '\t\t\tcx--;\n',
+                     '\t\t\tnext_tile = GSMap.GetTileIndex(cx, cy);\n',
+                     '\t\t\tradius = GSMap.DistanceManhattan(start_tile, next_tile);\n',
+                     '\t\t\tif (radius > max_radius) return false;\n\n',
+
+                     '\t\t\tlocal res = TryBuildIndustryAt(cx, cy, type, name);\n',
+                     '\t\t\tif (res) {\n',
+                         '\t\t\t\t// GSLog.Info(name + " built at spiral tile (" + cx + ", " + cy + ").");\n',
+                         '\t\t\t\treturn true;\n',
+                     '\t\t\t}\n',
+                 '\t\t}\n\n',
+
+                 '\t\t//\n',
+                 '\t\t// ----- Step 4: Move UP by \'step\' tiles -----\n',
+                 '\t\t//\n',
+                 '\t\tfor (local i = 0; i < step; i++) {\n',
+                     '\t\t\tcy--;\n',
+                     '\t\t\tnext_tile = GSMap.GetTileIndex(cx, cy);\n',
+                     '\t\t\tradius = GSMap.DistanceManhattan(start_tile, next_tile);\n',
+                     '\t\t\tif (radius > max_radius) return false;\n\n',
+
+                     '\t\t\tlocal res = TryBuildIndustryAt(cx, cy, type, name);\n',
+                     '\t\t\tif (res) {\n',
+                         '\t\t\t\t// GSLog.Info(name + " built at spiral tile (" + cx + ", " + cy + ").");\n',
+                         '\t\t\t\treturn true;\n',
+                     '\t\t\t}\n',
+                 '\t\t}\n\n',
+
+                 '\t\t// Increase step again\n',
+                 '\t\tstep++;\n',
+             '\t}\n\n',
+             
+             '\tGSLog.Error("No suitable location for " + name + ".");\n',
+             '\treturn false;\n',
+        '}\n\n'
         
          ]
     
@@ -482,7 +772,7 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
 
 def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_header='Size',
                      city_header='City',town_name_header='Name',town_pop_header='Population',
-                     pop_buffer_header=None, select_col=None, select_val=None):
+                     pop_buffer_header=None, max_radius=100, select_col=None, select_val=None):
     '''
     
 
@@ -671,7 +961,7 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                     continue
                 
             
-                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+','+town_buff+');\n'
+                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+','+town_buff+','+str(max_radius)+');\n'
                 towns_code.append(line)
         
         ## route for dataframes
@@ -781,7 +1071,7 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
                     continue
                     
                 
-                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+','+town_buff+');\n'
+                line = '\tTryTown('+town_x+','+town_y+','+town_size+','+town_city+','+'"'+town_name+'"'+','+town_pop+','+town_buff+','+str(max_radius)+');\n'
                 towns_code.append(line)
         
         
@@ -792,8 +1082,9 @@ def build_towns_code(towns, town_x_header='X', town_y_header='Y', town_size_head
 
 #### Create industries code
 
-def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_header='Name',ind_type_header='Type',
-                        trylevel_header=None, level_x2_header=None, level_y2_header=None):
+def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_header='Name', 
+                        ind_type_header='Type', trylevel_header=None, level_x2_header=None, 
+                        level_y2_header=None, max_radius=100, select_col=None, select_val=None):
     '''
     This function helps build the squirrel code function calls for TryIndustry to build industries.
 
@@ -823,6 +1114,12 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
         
     **level_y2_header** : *str, optional*;
         Name or index of the header containing the number of tiles across for leveling in the dataframe, xlsx, or CSV file. The defeault is 'Level'.
+    
+    **select_col** : *str, optional*;
+        Name or index of the column to select rows with values from select_val in the dataframe, xlsx, or CSV value. The defualt is None.
+        
+    **select_val** : *str, optional*;
+        Value to filter the dataframe, xlsx, or CSV value. The default is None.
     
     Returns
     -------
@@ -874,6 +1171,11 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
         if not ind_type_header.isnumeric():
             if not ind_type_header in industry.columns:
                 raise ValueError('ind_type_header must be valid column name')
+                
+        if select_col is not None:
+            if not select_col.isnumeric():
+                if not select_col in industry.columns:
+                    raise ValueError('select_col must be valid column name')
                 
         if trylevel_header is not None:
             if not trylevel_header.isnumeric():
@@ -950,14 +1252,17 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 continue
             
         
-            line = '\tTryIndustry('+ind_x+','+ind_y+','+'"'+ind_name+'"'+','+ind_type+','+trylevel+','+level_x2+','+level_y2+');\n'
+            line = '\tTryIndustry('+ind_x+','+ind_y+','+'"'+ind_name+'"'+','+ind_type+','+trylevel+','+level_x2+','+level_y2+','+str(max_radius)+');\n'
             industry_code.append(line)
                 
     
     ## route for dataframes
     elif isinstance(industry, pd.DataFrame):
         for index, row in industry.iterrows():
-            
+            ## if filter parameter given, filter dataframe
+            if select_col is not None:
+                industry = industry.loc[industry[select_col] == select_val]
+                
             ## check if index or name
             if ind_x_header.isnumeric():
                 ind_x = row.iloc[ind_x_header]
@@ -1046,7 +1351,7 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
                 continue
 
                 
-            line = '\tTryIndustry('+ind_x+','+ind_y+','+'"'+ind_name+'"'+','+ind_type+','+trylevel+','+level_x2+','+level_y2+');\n'
+            line = '\tTryIndustry('+ind_x+','+ind_y+','+'"'+ind_name+'"'+','+ind_type+','+trylevel+','+level_x2+','+level_y2+','+str(max_radius)+');\n'
             industry_code.append(line)
             
     

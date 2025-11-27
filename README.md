@@ -49,10 +49,12 @@
 
 ## About the Project
 Otter provides tools to help create real-world custom maps and scenarios in OpenTTD.
-Otter takes a GIS approach to custom map-making in OpenTTD. GIS knowledge is not required to use
-the tools in otter, but having a firm grasp of GIS concepts and software will help
-to unlock the full potential of otter in your map-making workflows. Much of otter revolves around data 
-transformations of real-world coordinates into game-grid coordinates.
+Otter takes a GIS approach to custom map-making in OpenTTD and offers workflows to 
+help SAVE scenario information outside of OpenTTD for revision and replication.
+GIS knowledge is not required to use the tools in otter, but having a firm grasp of 
+GIS concepts and software will help to unlock the full potential of otter in your map-making workflows. 
+Much of otter revolves around data transformations of real-world coordinates into game-grid coordinates
+and vice versa.
 
 Otter utilizes [Bother by Bunburya](https://github.com/bunburya/bother) to provide a pure pythonic method of downloading
 SRTM terrain data and scaling images to quickly develop heightmaps
@@ -330,8 +332,8 @@ US West Coast.
                                               ind_y_header='col',
                                               ind_name_header='Name',
                                               
-                                              # column name of the reference code for the industry
-                                              # NAIS industry codes can be found in the documentation
+                                              # column name of the reference type code for the industry
+                                              # NAIS industry type codes can be found in the documentation
                                               ind_type_header='ind code',
                                               
                                               # industries require level land to be placed
@@ -369,14 +371,14 @@ US West Coast.
 
 12. Open the Scenario Editor and load the heightmap PNG. Open the Gamescript settings
 and select the newly created gamescript. If the gamescript is not in the list, there may be an
-error with the code somewhere (close and reopen OTTD if the gamescript was created while the game was open). 
-Manually add a dummy town somewhere in the scenario. This can be deleted later.
+error with the code somewhere (close and reopen OTTD if the gamescript was created while the game was open).
+Pause the scenario. Save the scenario and close Scenario Editor.
 
-13. Save the scenario and then load the scenario as a new game. All of the features
-should begin to populate the map as the gamescript runs. This may take several minutes.
-when the gamescript is complete, fast forward the game so that the populations update from
-the added houses. Save the game and then exit. Find the saved game file
-and change the extension from .sav to .scn to convert it to a scenario.
+13. Open Scenario Editor again and load the scenario. The gamescript should begin to run and all of the features
+should begin to populate the map. This may take several minutes for the script to finish
+placing everything. When the gamescript is complete, open the Gamescript settings and remove the gamescript. 
+Save the scenario. To load an existing save as a scenario, change the .sav extension to .scn and follow
+the above process.
 
 14. Load the scenario and play the game!
 
