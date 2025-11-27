@@ -78,7 +78,7 @@ def add_land(ras, shp_path, outpath, elevation=1, select_col=None, select_val=No
                   driver='GTiff',
                   height=out_meta['height'],
                   width=out_meta['width'],
-                  count=1, # numebr of bands
+                  count=1, # number of bands
                   dtype=out_meta['dtype'],
                   crs=out_meta['crs'],
                   nodata=out_meta['nodata'], # change if data has nodata value

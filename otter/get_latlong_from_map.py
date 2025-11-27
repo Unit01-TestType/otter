@@ -110,7 +110,8 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
         if select_col is not None:
             print('Filtering rows...')
             df = df.loc[df[select_col] == select_val]
-            
+        
+        df = _filter_missing(df, col_col, row_col)
         tile_coords = list(zip(df[row_col],df[col_col]))
         
         
@@ -121,6 +122,9 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
             print('Filtering rows...')
             df = df.loc[df[select_col] == select_val]
 
+        df = _filter_missing(df, col_col, row_col)
+        df[col_col] = df.loc[:,col_col].astype(int) # cast as integer
+        df[row_col] = df.loc[:,row_col].astype(int) # cast as integer
         tile_coords = list(zip(df[row_col],df[col_col]))
         
         
@@ -130,6 +134,10 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
         if select_col is not None:
             print('Filtering rows...')
             df = df.loc[df[select_col] == select_val]
+            
+        df = _filter_missing(df, col_col, row_col)
+        df[col_col] = df.loc[:,col_col].astype(int) # cast as integer
+        df[row_col] = df.loc[:,row_col].astype(int) # cast as integer
         tile_coords = list(zip(df[row_col],df[col_col]))
         
 
@@ -140,6 +148,9 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
             print('Filtering rows...')
             df = df.loc[df[select_col] == select_val]
             
+        df = _filter_missing(df, col_col, row_col)
+        df[col_col] = df.loc[:,col_col].astype(int) # cast as integer
+        df[row_col] = df.loc[:,row_col].astype(int) # cast as integer
         tile_coords = list(zip(df[row_col],df[col_col]))
     
     
@@ -150,6 +161,9 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
             print('Filtering rows...')
             df = df.loc[df[select_col] == select_val]
             
+        df = _filter_missing(df, col_col, row_col)
+        df[col_col] = df.loc[:,col_col].astype(int) # cast as integer
+        df[row_col] = df.loc[:,row_col].astype(int) # cast as integer
         tile_coords = list(zip(df[row_col],df[col_col]))
 
 
@@ -157,6 +171,9 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
     if rc_input:
         df = pd.DataFrame(grid_coords,columns=['row','col'])
 
+        df = _filter_missing(df, col_col, row_col)
+        df[col_col] = df.loc[:,col_col].astype(int) # cast as integer
+        df[row_col] = df.loc[:,row_col].astype(int) # cast as integer
         tile_coords = list(zip(df['row'],df['col']))
     
     
@@ -176,8 +193,8 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
     
     for i in tqdm(range(len(tile_coords)), position=0, leave=True):
         t = tile_coords[i]
-        r = t[0]
-        c = t[1]
+        r = int(t[0])
+        c = int(t[1])
         long = longs[r,c]
         lat = lats[r,c]
         long_list[i] = long
@@ -205,3 +222,35 @@ def get_latlong_from_map(ras, grid_coords, outpath=None, row_col=None, col_col=N
     return df    
         
         
+        
+
+
+
+
+
+
+def _filter_missing(df, x_field, y_field):
+    '''
+    Helper function to filter out missing tile indices from datatables
+
+    Parameters
+    ----------
+    df : dataframe
+        input dataframe from grid_coords.
+    x_field : str
+        x coordinate header.
+    y_field : str
+        y coordinate header.
+
+    Returns
+    -------
+    dataframe with rows with missing indices removed.
+
+    '''
+    n_rows_before = len(df)
+    df = df.dropna(subset=[x_field,y_field]) # drop where nan
+    n_rows_after = len(df)
+    if (n_rows_before - n_rows_after) > 0:
+        print(str(n_rows_before - n_rows_after) + " rows with invalid row,col indices removed.")
+        
+    return df
