@@ -157,25 +157,25 @@ def build_main(outdir, towns_code=None, industry_code=None, canal_code=None, sig
     
     #### Add industries
     if industry_code is not None:
-        # main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
+        main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
         main_file.writelines(industry_code)
         main_file.write('\n\tprint("Finished adding industries.");\n\n')
-        # main_file.write('\t// set bank balance back to starting balance\n')
-        ## main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
-        ## main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
-        ## main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
+        main_file.write('\t// set bank balance back to starting balance\n')
+        main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
+        main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
+        main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
         
     
     #### Add canals
     if canal_code is not None:
-        # main_file.write('\t// Start in deity mode to add funds. Then change to company mode to place canals.\n')
-        # main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
+        main_file.write('\t// Start in deity mode to add funds. Then change to company mode to place canals.\n')
+        main_file.write('\tlocal bank_balance = GSCompany.ChangeBankBalance(0,9990000000,7,GSMap.TILE_INVALID);\n')
         main_file.writelines(canal_code)
         main_file.write('\n\tprint("Finished adding canals.");\n\n')
-        # main_file.write('\t// set bank balance back to starting balance\n')
-        # main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
-        # main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
-        # main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
+        main_file.write('\t// set bank balance back to starting balance\n')
+        main_file.write('\tbank_balance = GSCompany.GetBankBalance(0);\n')
+        main_file.write('\tlocal bb_diff = (bank_balance - 100000);\n')
+        main_file.write('\tbank_balance = GSCompany.ChangeBankBalance(0,-1*bb_diff,0,GSMap.TILE_INVALID);\n\n')
 
     #### Add signs
     if signs_code is not None:
@@ -1258,10 +1258,12 @@ def build_industry_code(industry, ind_x_header='X',ind_y_header='Y',ind_name_hea
     
     ## route for dataframes
     elif isinstance(industry, pd.DataFrame):
-        for index, row in industry.iterrows():
+        
+        if select_col is not None:
             ## if filter parameter given, filter dataframe
-            if select_col is not None:
-                industry = industry.loc[industry[select_col] == select_val]
+            industry = industry.loc[industry[select_col] == select_val]
+        
+        for index, row in industry.iterrows():
                 
             ## check if index or name
             if ind_x_header.isnumeric():
