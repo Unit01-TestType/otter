@@ -35,6 +35,7 @@
     </li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#additional-features">Additional Features</a></li>
+    <li><a href="#known-issues">Known Issues</a></li>
     <li><a href="#future">Future</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -48,6 +49,8 @@
 <!-- ABOUT THE PROJECT -->
 
 ## About the Project
+**OTTER IS CURRENTLY COMPATIBLE WITH OTTD 14.1**
+
 Otter provides tools to help create real-world custom maps and scenarios in OpenTTD.
 Otter takes a GIS approach to custom map-making in OpenTTD and offers workflows to 
 help SAVE scenario information outside of OpenTTD for revision and replication.
@@ -460,13 +463,22 @@ create_random_points(ras, # raster tif created by bother
 
 ```
 
+<!-- Known Issues -->
+## Known Issues
+- Even in Deity Mode, construction costs are still applied to Company 1 if the construction
+is done through a gamescript. The current solution is to add the maximum funds before construction
+and then reset the bank balance to the starting balance. However, this transaction
+is still reflected in the company finances for the first year after the scenario is saved and loaded.
+- Ownership of canal tiles are still assigned to Company 1 even when Deity Mode is used to place them.
+This can create issues when infrastructure maintenance is turned on.
+
+
 <!-- Future -->
 ## Future
 
 Planned features and revisions:
-- Overhaul and fix tools for random point generation
+- **UPDATE FOR OTTD 15.0**
 - Add tools to automatically obtain and download city information based on bounding boxes
-- Refactor gamescript code so it looks like it was written by somemone who knows what they're doing...
 - Create templates and methods for extracting tile information from existing saves/scenarios
     - extract list of towns with population, tile coordinates, and house and road layouts (tiles)
     - extract list of industry, nearest town, and tile coordinates
