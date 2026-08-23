@@ -49,7 +49,7 @@
 <!-- ABOUT THE PROJECT -->
 
 ## About the Project
-**OTTER IS CURRENTLY COMPATIBLE WITH OTTD 14.1**
+**OTTER HAS NOT BEEN TESTED FOR OTTD 15.X**
 
 Otter provides tools to help create real-world custom maps and scenarios in OpenTTD.
 Otter takes a GIS approach to custom map-making in OpenTTD and offers workflows to 
@@ -108,6 +108,15 @@ I wanted to make otter as accessible as possible for the OpenTTD community and p
 to compile additional resources for custom map and scenario development to avoid "reinventing the wheel".
 
 
+## Recent Custom Map-Making Tool Developments
+
+### OpenTTD Heightmap Generator
+Zyliety recently released a web-based GUI that uses Bother to create heightmaps. The GUI also queries
+OSM data to gather cities and towns within the bounding box to import as json into OTTD.
+
+https://github.com/zyliety/OpenTTD-Heightmap-Generator 
+
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -149,6 +158,51 @@ path that look something like this
    ```python
    import otter
    ```
+
+
+### Town Data Resources
+
+Real-world city and town data can be aquired in many different ways. One suggested method is to use
+[Overpass Turbo](https://overpass-turbo.eu/) to query all cities and towns within a bounding
+box and export the coordinates and population data as a geojson file. You can use the same coordinate
+bounding box used to generate the heightmap.
+
+Example Overpass Turbo query:
+
+[out:json][timeout:300];
+// gather results
+(
+  node["place"="city"]({{bbox}});
+  node["place"="town"]({{bbox}});
+);
+// print results
+out geom;
+
+
+{{bbox}} will use the visual map by default. But you can repalce {{bbox}} with exact 
+latitude and longitude coordinates to specifiy a precise bounding box.
+
+
+Example bounding box for the US West Coast Example:
+
+[out:json][timeout:300];
+// gather results
+(
+  node["place"="city"](29.0001388888888840, -124.8155385698191395, 49.0001388888888840, -114.8155385698191395);
+  node["place"="town"](29.0001388888888840, -124.8155385698191395, 49.0001388888888840, -114.8155385698191395);
+);
+// print results
+out geom;
+
+
+Export the query results to GeoJson and convert the GeoJson file using:
+
+```python
+convert_geojson(geojason_path, # raster GeoTIFF from Bother
+                outpath=None, # optional, output file path for Excel, CSV, or shapefile. File type inferred from file exension.
+                cols=['name','population','longitude','latitude'], # optional, a list of columns to keep from the raw geojson
+# returns a geopandas GeoDataFrame. If outpath is not None, a file is also written.
+```
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -408,6 +462,22 @@ which define the field name to check
 and the value(s) to filter table rows, respectively. 
 
 
+### convert_geojson()
+
+This function convert raw geojson outputs from [Overpass Turbo](https://overpass-turbo.eu/)
+into Excel, CSV, or shapefile ouputs. Thus, city and town location and population data 
+from Overpass Turbo can be converted into user-friendly and otter-friendly formats for editting
+and maniupulation.
+
+```python
+convert_geojson(geojason_path, # raster GeoTIFF from Bother
+                outpath=None, # optional, output file path for Excel, CSV, or shapefile. File type inferred from file exension.
+                cols=['name','population','longitude','latitude'], # optional, a list of columns to keep from the raw geojson
+# returns a geopandas GeoDataFrame. If outpath is not None, a file is also written.
+```
+
+
+
 ### get_latlong_from_map()
 
 This function converts row,column game-grid coordinates from a known, georeferenced heightmap
@@ -465,6 +535,8 @@ create_random_points(ras, # raster tif created by bother
 
 <!-- Known Issues -->
 ## Known Issues
+- Bounding boxes work best as North-South squares/rectangles. Providing a rotated boudning box
+may produce strange or warped results. 
 - Even in Deity Mode, construction costs are still applied to Company 1 if the construction
 is done through a gamescript. The current solution is to add the maximum funds before construction
 and then reset the bank balance to the starting balance. However, this transaction
@@ -477,8 +549,9 @@ This can create issues when infrastructure maintenance is turned on.
 ## Future
 
 Planned features and revisions:
-- **UPDATE FOR OTTD 15.0**
-- Add tools to automatically obtain and download city information based on bounding boxes
+- **TEST FOR OTTD 15.x and 16.x**
+- Add built-in tools for OSM city data queries.
+- Fix and improve handling of rotated bounding boxes.
 - Create templates and methods for extracting tile information from existing saves/scenarios
     - extract list of towns with population, tile coordinates, and house and road layouts (tiles)
     - extract list of industry, nearest town, and tile coordinates
