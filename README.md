@@ -198,7 +198,7 @@ out geom;
 Export the query results to GeoJson and convert the GeoJson file using:
 
 ```python
-convert_geojson(geojason_path, # raster GeoTIFF from Bother
+convert_geojson(geojason_path, # path to a geojson file
                 outpath=None, # optional, output file path for Excel, CSV, or shapefile. File type inferred from file exension.
                 cols=['name','population','longitude','latitude'], # optional, a list of columns to keep from the raw geojson
 # returns a geopandas GeoDataFrame. If outpath is not None, a file is also written.
@@ -470,7 +470,7 @@ from Overpass Turbo can be converted into user-friendly and otter-friendly forma
 and maniupulation.
 
 ```python
-convert_geojson(geojason_path, # raster GeoTIFF from Bother
+convert_geojson(geojason_path, # path to a geojson file
                 outpath=None, # optional, output file path for Excel, CSV, or shapefile. File type inferred from file exension.
                 cols=['name','population','longitude','latitude'], # optional, a list of columns to keep from the raw geojson
 # returns a geopandas GeoDataFrame. If outpath is not None, a file is also written.
