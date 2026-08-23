@@ -168,7 +168,7 @@ box and export the coordinates and population data as a geojson file. You can us
 bounding box used to generate the heightmap.
 
 Example Overpass Turbo query:
-
+```c
 [out:json][timeout:300];
 // gather results
 (
@@ -177,7 +177,7 @@ Example Overpass Turbo query:
 );
 // print results
 out geom;
-
+```
 
 {{bbox}} will use the visual map by default. But you can repalce {{bbox}} with exact 
 latitude and longitude coordinates to specifiy a precise bounding box.
@@ -185,6 +185,7 @@ latitude and longitude coordinates to specifiy a precise bounding box.
 
 Example bounding box for the US West Coast Example:
 
+```c
 [out:json][timeout:300];
 // gather results
 (
@@ -193,7 +194,7 @@ Example bounding box for the US West Coast Example:
 );
 // print results
 out geom;
-
+```
 
 Export the query results to GeoJson and convert the GeoJson file using:
 
