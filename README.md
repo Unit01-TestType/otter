@@ -162,13 +162,49 @@ path that look something like this
 
 ### Town Data Resources
 
-Real-world city and town data can be aquired in many different ways. One suggested method is to use
-[Overpass Turbo](https://overpass-turbo.eu/) to query all cities and towns within a bounding
+#### otter.query_places
+
+Otter has built-in API access to OpenStreetMaps Overpass API. At minimum, only a bounding
+box needs to be supplied to return a dataset including all cities and towns within the area.
+The function returns a pandas dataframe directly with options to write the output to 
+CSV, Excel, geojson, or shapefile.
+
+Usage with default values:
+
+```python
+places = otter.query_places(bbox=(latitude_southwest, longitude_southwest, latitude_northeast, lontitude_northeast),
+                            place_types=('city','town')), # iterable include all or any of 'city', 'town', 'village', 'hamlet'
+                            name_language=None, # iterable of ISO-639 language codes to return, otherwise returns city name in local language
+                            ## other parameters
+                            include_admin=False, # flag to including other administrative divisions
+                            query=None, # str, custom OSM Overpass query overriding built-in query
+                            admin_levels=(2, 3, 4, 5, 6, 7, 8), # iterable of admin levels to return when include_admin is True
+                            output=None, # output file path with extension to write file of output (.csv, .xlsx, .json, .geojson, .shp)
+                            user_agent=("MyOverpassPlaceTool/1.0 "
+                                        "(replace-with-your-contact-information)", # Overpass user agent information
+                            servers=('https://overpass-api.de/api/interpreter',https://overpass.private.coffee/api/interpreter), # Overpass API mirror servers
+                            timeout=90, # querytimeout in seconds
+                            request_delay=1.0, # Minimum delay between requests
+                            retries_per_server=2,# number of retry attempts for transient failures
+                            cache_path='~/.cache/overpass_places/cache.sqlite', # path for local caching
+                            max_results_per_tile=1000, # large requests are broken into multiple tiles
+                            max_depth=8, # maximum recursive subdivision depth when returning administrative levels
+                            log_level=logging.WARNING # python logging level
+                            )
+                            
+
+```
+
+
+#### Overpass Turbo
+
+Real-world city and town data can be aquired in many different ways. One method that includes a GUI interface 
+is to use [Overpass Turbo](https://overpass-turbo.eu/) to query all cities and towns within a bounding
 box and export the coordinates and population data as a geojson file. You can use the same coordinate
 bounding box used to generate the heightmap.
 
 Example Overpass Turbo query:
-
+```c
 [out:json][timeout:300];
 // gather results
 (
@@ -177,7 +213,7 @@ Example Overpass Turbo query:
 );
 // print results
 out geom;
-
+```
 
 {{bbox}} will use the visual map by default. But you can repalce {{bbox}} with exact 
 latitude and longitude coordinates to specifiy a precise bounding box.
@@ -185,6 +221,7 @@ latitude and longitude coordinates to specifiy a precise bounding box.
 
 Example bounding box for the US West Coast Example:
 
+```c
 [out:json][timeout:300];
 // gather results
 (
@@ -193,12 +230,12 @@ Example bounding box for the US West Coast Example:
 );
 // print results
 out geom;
-
+```
 
 Export the query results to GeoJson and convert the GeoJson file using:
 
 ```python
-convert_geojson(geojason_path, # path to a geojson file
+otter.convert_geojson(geojason_path, # path to a geojson file
                 outpath=None, # optional, output file path for Excel, CSV, or shapefile. File type inferred from file exension.
                 cols=['name','population','longitude','latitude'], # optional, a list of columns to keep from the raw geojson
 # returns a geopandas GeoDataFrame. If outpath is not None, a file is also written.
