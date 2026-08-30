@@ -66,6 +66,7 @@ Otter can be used to:
 - Create heightmaps with Bother
 - Create GIS compatible georeferenced rasters of Bother heightmap images
 - Edit heightmap elevations using GIS data
+- Query OSM to gather locations and populations of real-world cities and towns
 - Convert real-world locations of cities and towns from common data formats (e.g. Excel, CSV) 
 into game-grid coordinates compatible with the new JSON import tool
 - Convert other features from real-world coordinates or shapefiles into game-grid coordinates
@@ -587,7 +588,7 @@ This can create issues when infrastructure maintenance is turned on.
 
 Planned features and revisions:
 - **TEST FOR OTTD 15.x and 16.x**
-- Add built-in tools for OSM city data queries.
+- Add built-in tools for OSM city data queries. - DONE
 - Fix and improve handling of rotated bounding boxes.
 - Create templates and methods for extracting tile information from existing saves/scenarios
     - extract list of towns with population, tile coordinates, and house and road layouts (tiles)
