@@ -61,7 +61,7 @@ certain zones meeting defined conditions.</p>
 <p>These tools are designed to be used with the georeference png output
 from bother.</p>
 
-<p><strong><em>Transparency: this function was originally written by Unit01-TestType and revised using ChatGPT.</em></strong></p>
+<p><em><strong>Transparency: this function was originally written by Unit01-TestType and revised using ChatGPT.</strong></em></p>
 </div>
 
                         <input id="mod-create_random_points-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -91,14 +91,14 @@ from bother.</p>
 </span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="sd">&#39;&#39;&#39;</span>
 </span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>
 </span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>
-</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="kn">import</span> <span class="nn">os</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="kn">import</span> <span class="nn">warnings</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a><span class="kn">import</span> <span class="nn">otter</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">otter</span>
 </span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>
 </span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>
-</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="k">def</span> <span class="nf">create_random_points</span><span class="p">(</span><span class="n">ras</span><span class="p">,</span> <span class="n">zone_shp_path</span><span class="p">,</span> <span class="n">zone_col</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outpath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="k">def</span><span class="w"> </span><span class="nf">create_random_points</span><span class="p">(</span><span class="n">ras</span><span class="p">,</span> <span class="n">zone_shp_path</span><span class="p">,</span> <span class="n">zone_col</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outpath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 </span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 </span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">    Create random points per zone using geopandas.sample_points.</span>
 </span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>
@@ -179,7 +179,7 @@ from bother.</p>
 </span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>    <span class="n">zone_ids</span> <span class="o">=</span> <span class="n">shp</span><span class="p">[</span><span class="n">zone_col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
 </span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
-</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>    <span class="k">def</span> <span class="nf">get_param</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">):</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_param</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">):</span>
 </span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch per-zone parameter, falling back to global value.&quot;&quot;&quot;</span>
 </span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>        <span class="n">val</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 </span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -253,7 +253,7 @@ from bother.</p>
 
     </div>
     <a class="headerlink" href="#create_random_points"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="create_random_points-32"><a href="#create_random_points-32"><span class="linenos"> 32</span></a><span class="k">def</span> <span class="nf">create_random_points</span><span class="p">(</span><span class="n">ras</span><span class="p">,</span> <span class="n">zone_shp_path</span><span class="p">,</span> <span class="n">zone_col</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outpath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="create_random_points-32"><a href="#create_random_points-32"><span class="linenos"> 32</span></a><span class="k">def</span><span class="w"> </span><span class="nf">create_random_points</span><span class="p">(</span><span class="n">ras</span><span class="p">,</span> <span class="n">zone_shp_path</span><span class="p">,</span> <span class="n">zone_col</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outpath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 </span><span id="create_random_points-33"><a href="#create_random_points-33"><span class="linenos"> 33</span></a><span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 </span><span id="create_random_points-34"><a href="#create_random_points-34"><span class="linenos"> 34</span></a><span class="sd">    Create random points per zone using geopandas.sample_points.</span>
 </span><span id="create_random_points-35"><a href="#create_random_points-35"><span class="linenos"> 35</span></a>
@@ -334,7 +334,7 @@ from bother.</p>
 </span><span id="create_random_points-110"><a href="#create_random_points-110"><span class="linenos">110</span></a>    <span class="n">zone_ids</span> <span class="o">=</span> <span class="n">shp</span><span class="p">[</span><span class="n">zone_col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
 </span><span id="create_random_points-111"><a href="#create_random_points-111"><span class="linenos">111</span></a>    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="create_random_points-112"><a href="#create_random_points-112"><span class="linenos">112</span></a>
-</span><span id="create_random_points-113"><a href="#create_random_points-113"><span class="linenos">113</span></a>    <span class="k">def</span> <span class="nf">get_param</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">):</span>
+</span><span id="create_random_points-113"><a href="#create_random_points-113"><span class="linenos">113</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_param</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">):</span>
 </span><span id="create_random_points-114"><a href="#create_random_points-114"><span class="linenos">114</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch per-zone parameter, falling back to global value.&quot;&quot;&quot;</span>
 </span><span id="create_random_points-115"><a href="#create_random_points-115"><span class="linenos">115</span></a>        <span class="n">val</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 </span><span id="create_random_points-116"><a href="#create_random_points-116"><span class="linenos">116</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -415,7 +415,7 @@ from bother.</p>
 <p><strong>outpath</strong> : <em>str, optional</em>;
     Path to save the resulting file (.csv, .xlsx, .shp).</p>
 
-<p><strong>**kwargs</strong> :
+<p>**<strong>kwargs</strong> :
     Keyword arguments that may include:
     - size, intensity, center, cov, n_seeds, cluster_radius, etc.
     Each may be a single value (applies to all zones) or a dict keyed by zone ID.</p>
