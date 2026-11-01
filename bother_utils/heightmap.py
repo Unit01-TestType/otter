@@ -95,25 +95,83 @@ def resample(memfile: MemoryFile, scale_factor: float) -> MemoryFile:
         
         return dst_memfile
 
-def reproject_raster(memfile: MemoryFile, dst_crs: str, src_crs: str = WGS84) -> MemoryFile:
-    """Reproject raster with CRS src_crs to new CRS dst_crs."""
-    
+def reproject_raster(
+    memfile: MemoryFile,
+    dst_crs: str,
+    src_crs: str = WGS84,
+    dst_transform=None,
+    dst_width: int = None,
+    dst_height: int = None,
+    ) -> MemoryFile:
+    """
+    Reproject raster from src_crs to dst_crs.
+
+    If dst_transform, dst_width, and dst_height are supplied, they define
+    the exact destination raster grid. This allows the destination raster
+    to be rotated relative to geographic north.
+
+    If they are not supplied, retain the original behavior and calculate a
+    conventional north-up destination transform from the source bounds.
+    """
+
     print(f'Reprojecting raster from {src_crs} to {dst_crs}.')
+
     with memfile.open() as src:
         print(f'Source raster has shape {src.shape}.')
-        transform, width, height = calculate_default_transform(src_crs, dst_crs, src.width, src.height, *src.bounds)
+
+        # ------------------------------------------------------------------
+        # ROTATION:
+        # Use the caller-provided destination grid when supplied.
+        #
+        # This is the important distinction:
+        #
+        #   calculate_default_transform(...)
+        #
+        # creates a normal north-up raster.
+        #
+        #   dst_transform + dst_width + dst_height
+        #
+        # allows Otter to define an arbitrarily rotated rectangular grid.
+        # ------------------------------------------------------------------
+
+        if (
+            dst_transform is None
+            or dst_width is None
+            or dst_height is None
+        ):
+            transform, width, height = calculate_default_transform(
+                src_crs,
+                dst_crs,
+                src.width,
+                src.height,
+                *src.bounds,
+            )
+        else:
+            transform = dst_transform
+            width = int(dst_width)
+            height = int(dst_height)
+
+            print(
+                'Using explicit destination raster grid: '
+                f'{width}x{height}.'
+            )
+            print(
+                f'Destination transform: {transform}'
+            )
+
         kwargs = src.profile.copy()
+
         kwargs.update({
             'crs': dst_crs,
             'transform': transform,
             'width': width,
-            'height': height
+            'height': height,
         })
-        
+
         dst_memfile = MemoryFile()
 
         with dst_memfile.open(**kwargs) as dst:
-            for i in range(1, src.count+1):
+            for i in range(1, src.count + 1):
                 reproject(
                     source=rasterio.band(src, i),
                     destination=rasterio.band(dst, i),
@@ -121,11 +179,13 @@ def reproject_raster(memfile: MemoryFile, dst_crs: str, src_crs: str = WGS84) ->
                     src_crs=src_crs,
                     dst_transform=transform,
                     dst_crs=dst_crs,
-                    resampling=Resampling.bilinear
+                    resampling=Resampling.bilinear,
                 )
-        
-            print(f'Reprojected raster has shape {dst.shape}.')
-        
+
+            print(
+                f'Reprojected raster has shape {dst.shape}.'
+            )
+
         return dst_memfile
 
 def get_lake(data: np.ndarray, row: int, col: int, checked: np.ndarray, min_size: int) -> Optional[Set[Tuple[int, int]]]:

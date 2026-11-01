@@ -272,10 +272,16 @@ US West Coast.
     ## [width]x[height]
     png_scale = '2048x4096'
     
-    ## define the bounding box
+    ## define the bounding box of the game grid
     ## the format is: latitude bottom left, longitude bottom left, latitude top right, longitude top right
-    bounds = [29.0001388888888840, -124.8155385698191395, 49.0001388888888840, -114.8155385698191395]
-    otter.bother(bounds=bounds,
+    ## Note: corners refer to the corners of the intended game grid
+    corners = [
+                (49.0001388888888840, -124.8155385698191395),  # top-left
+                (49.0001388888888840, -114.8155385698191395),  # top-right
+                (29.0001388888888840, -114.8155385698191395),  # bottom-right
+                (29.0001388888888840, -124.8155385698191395),  # bottom-left
+              ]
+    otter.bother(corners=corners,
                  outfile=png_path,
                  outfile_tif=bother_tif,
                  epsg='4326',
@@ -573,8 +579,6 @@ create_random_points(ras, # raster tif created by bother
 
 <!-- Known Issues -->
 ## Known Issues
-- Bounding boxes work best as North-South squares/rectangles. Providing a rotated boudning box
-may produce strange or warped results. 
 - Even in Deity Mode, construction costs are still applied to Company 1 if the construction
 is done through a gamescript. The current solution is to add the maximum funds before construction
 and then reset the bank balance to the starting balance. However, this transaction
@@ -620,7 +624,7 @@ Distributed under the MIT License.
 
 MIT License
 
-Copyright (c) 2025 Unit01-TestType
+Copyright (c) 2026 Unit01-TestType
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
