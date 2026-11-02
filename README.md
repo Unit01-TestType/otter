@@ -600,6 +600,11 @@ Planned features and revisions:
     - extract objects, signs, and other features
 - Creates templates and methods for extracting newGRF data into usable formats (not all newGRF data is publicly or easily available)
 - Upload industry code references for common industry replacement sets
+- Boundaries Generation:
+    - output validation information
+    - allow cardinal directions as inputs
+    - add metadata to ouput shapefile
+    - add interactive preview?
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

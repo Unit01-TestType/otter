@@ -19,3 +19,5 @@ from .get_map_coords import get_map_coords
 from .get_latlong_from_map import get_latlong_from_map
 
 from .town_data_to_json import town_data_to_json
+
+from .boundaries import generate_boundary

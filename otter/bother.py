@@ -42,7 +42,7 @@ from typing import Optional, Set, Tuple, List
 from PIL import Image
 from rasterio.io import MemoryFile
 
-from pyproj import CRS, Transformer
+from pyproj import CRS, Geod, Transformer
 from pyproj.exceptions import CRSError
 
 from otter.bother_utils.srtm import create_tif_file, clear_cache
@@ -62,6 +62,8 @@ from otter.bother_utils.heightmap import (
 
 import geopandas as gpd
 import pandas as pd
+import numpy as np
+from scipy.ndimage import map_coordinates
 
 # EPSG codes
 WGS84 = 4326  # Mercator - The default CRS used in the STRM data
@@ -75,7 +77,7 @@ def error(msg: str):
 # ---------------------------------------------------------------------------
 # ROTATION:
 # New helpers for converting the old bounds representation into the new
-# four-corner representation and validating oriented rectangles.
+# four-corner representation and validating oriented quadrilaterals.
 # ---------------------------------------------------------------------------
 
 def _bounds_to_corners(bounds):
@@ -151,35 +153,52 @@ def _normalize_corners(corners):
     return normalized
 
 
+
 def _project_corners_for_validation(corners):
     """
-    Project corners into a local UTM CRS for geometric validation.
+    Project corners into a local Azimuthal Equidistant (AEQD) CRS
+    for geometric validation.
 
-    The user-facing coordinates remain WGS84. This projection is only used
-    to determine whether the supplied points form a rectangle and whether
-    its physical aspect ratio is correct.
+    The projection is centred on the geodesic midpoint of the
+    top-left and bottom-right corners. This is the canonical
+    projection centre used by generate_boundary().
     """
-    mean_lat = sum(c[0] for c in corners) / 4
-    mean_lon = sum(c[1] for c in corners) / 4
+    geod = Geod(ellps="WGS84")
 
-    zone = int((mean_lon + 180) / 6) + 1
+    lat1, lon1 = corners[0]
+    lat2, lon2 = corners[2]
 
-    if mean_lat >= 0:
-        epsg = 32600 + zone
-    else:
-        epsg = 32700 + zone
+    azimuth, _, distance = geod.inv(
+        lon1, lat1,
+        lon2, lat2,
+    )
+
+    lon0, lat0, _ = geod.fwd(
+        lon1, lat1,
+        azimuth,
+        distance / 2,
+    )
+
+    local_crs = CRS.from_proj4(
+        f"+proj=aeqd "
+        f"+lat_0={lat0} "
+        f"+lon_0={lon0} "
+        f"+datum=WGS84 "
+        f"+units=m "
+        f"+no_defs"
+    )
 
     transformer = Transformer.from_crs(
-        'EPSG:4326',
-        f'EPSG:{epsg}',
+        CRS.from_epsg(4326),
+        local_crs,
         always_xy=True,
     )
 
-    # Return x,y rather than lat,lon.
     return [
         transformer.transform(lon, lat)
         for lat, lon in corners
     ]
+
 
 
 def _vector(a, b):
@@ -219,97 +238,72 @@ def _vectors_perpendicular(a, b, tolerance=1e-6):
     return abs(_dot(a, b)) / denominator <= tolerance
 
 
-def _validate_corners(corners, map_width=None, map_height=None):
+def _validate_corners(corners):
     """
-    Validate that four supplied corners describe a rectangle.
+    Validate four geographic corners defining a convex quadrilateral.
 
-    The aspect-ratio check is performed after projection into a local metric
-    CRS so that longitude/latitude degree lengths are not used directly.
+    Corners are in map-grid order:
+
+        top-left
+        top-right
+        bottom-right
+        bottom-left
+
+    Opposite sides do not need to be parallel, and adjacent sides
+    do not need to be perpendicular.
     """
     corners = _normalize_corners(corners)
 
     projected = _project_corners_for_validation(corners)
 
-    a, b, c, d = projected
+    # Check that all corners are distinct.
+    for i in range(4):
+        for j in range(i + 1, 4):
+            if _length(_vector(projected[i], projected[j])) < 0.01:
+                raise ValueError(
+                    'corners must contain four distinct points.'
+                )
 
-    ab = _vector(a, b)
-    bc = _vector(b, c)
-    cd = _vector(c, d)
-    da = _vector(d, a)
+    # Check that the quadrilateral is convex and consistently ordered.
+    cross_products = []
 
-    lengths = [
-        _length(ab),
-        _length(bc),
-        _length(cd),
-        _length(da),
-    ]
+    for i in range(4):
+        p1 = projected[i]
+        p2 = projected[(i + 1) % 4]
+        p3 = projected[(i + 2) % 4]
 
-    if any(length == 0 for length in lengths):
-        raise ValueError('corners must not contain duplicate points.')
+        edge1 = _vector(p1, p2)
+        edge2 = _vector(p2, p3)
 
-    # Opposite sides must be parallel.
-    if not _vectors_parallel(ab, cd):
+        cross_products.append(_cross(edge1, edge2))
+
+    if any(abs(value) < 1e-6 for value in cross_products):
         raise ValueError(
-            'corners do not define a rectangle: first and third sides '
-            'are not parallel.'
+            'corners define a degenerate quadrilateral with '
+            'collinear consecutive points.'
         )
 
-    if not _vectors_parallel(bc, da):
+    signs = [value > 0 for value in cross_products]
+
+    if not all(sign == signs[0] for sign in signs):
         raise ValueError(
-            'corners do not define a rectangle: second and fourth sides '
-            'are not parallel.'
+            'corners must define a convex quadrilateral in the order '
+            'top-left, top-right, bottom-right, bottom-left. '
+            'The supplied boundary may be self-intersecting or concave.'
         )
 
-    # Adjacent sides must be perpendicular.
-    if not _vectors_perpendicular(ab, bc):
+    # Check that the polygon has a meaningful area.
+    area = 0.5 * abs(sum(
+        projected[i][0] * projected[(i + 1) % 4][1]
+        - projected[(i + 1) % 4][0] * projected[i][1]
+        for i in range(4)
+    ))
+
+    if area < 1.0:
         raise ValueError(
-            'corners do not define a rectangle: adjacent sides are not '
-            'perpendicular.'
+            'The supplied corners define a boundary that is too small '
+            'or degenerate to process.'
         )
-
-    # Opposite sides should have equal lengths.
-    tolerance = 1e-5
-
-    if not math.isclose(
-        lengths[0],
-        lengths[2],
-        rel_tol=tolerance,
-        abs_tol=1e-3,
-    ):
-        raise ValueError(
-            'corners do not define a rectangle: opposite side lengths '
-            'do not match.'
-        )
-
-    if not math.isclose(
-        lengths[1],
-        lengths[3],
-        rel_tol=tolerance,
-        abs_tol=1e-3,
-    ):
-        raise ValueError(
-            'corners do not define a rectangle: opposite side lengths '
-            'do not match.'
-        )
-
-    # ROTATION:
-    # If dimensions were supplied, enforce the OpenTTD map aspect ratio.
-    if map_width is not None and map_height is not None:
-        geographic_ratio = lengths[0] / lengths[1]
-        map_ratio = map_width / map_height
-
-        if not math.isclose(
-            geographic_ratio,
-            map_ratio,
-            rel_tol=1e-4,
-            abs_tol=1e-4,
-        ):
-            raise ValueError(
-                f'The supplied corners have an aspect ratio of '
-                f'{geographic_ratio:.6f}:1, but the requested map dimensions '
-                f'{map_width}x{map_height} require an aspect ratio of '
-                f'{map_ratio:.6f}:1.'
-            )
 
     return corners
 
@@ -384,6 +378,198 @@ def _make_destination_transform(corners, width, height, dst_crs):
     )
 
 
+def _warp_quadrilateral_raster(
+    memfile,
+    corners,
+    width,
+    height,
+    dst_crs,
+):
+    """
+    Warp a source elevation raster into a destination grid defined
+    by four geographic corners.
+
+    Uses bilinear interpolation between all four corners, allowing
+    convex quadrilaterals that are not perfect rectangles.
+
+    The returned raster has exactly the requested width and height.
+    """
+    # Project the geographic corners into the canonical local AEQD CRS.
+    projected_corners = _project_corners_for_validation(corners)
+
+    a, b, c, d = projected_corners
+
+    # Open the source raster.
+    with memfile.open() as src:
+        source = src.read(1, masked=True)
+        source_transform = src.transform
+        source_crs = src.crs
+        source_profile = src.profile.copy()
+
+    if source_crs is None:
+        raise ValueError(
+            'The source elevation raster does not have a defined CRS.'
+        )
+
+    # Build a transformer from the local AEQD coordinate system
+    # to the source raster CRS.
+    geod = Geod(ellps='WGS84')
+
+    lat1, lon1 = corners[0]
+    lat2, lon2 = corners[2]
+
+    azimuth, _, distance = geod.inv(
+        lon1, lat1,
+        lon2, lat2,
+    )
+
+    lon0, lat0, _ = geod.fwd(
+        lon1, lat1,
+        azimuth,
+        distance / 2,
+    )
+
+    local_crs = CRS.from_proj4(
+        f'+proj=aeqd '
+        f'+lat_0={lat0} '
+        f'+lon_0={lon0} '
+        f'+datum=WGS84 '
+        f'+units=m '
+        f'+no_defs'
+    )
+
+    transformer = Transformer.from_crs(
+        local_crs,
+        source_crs,
+        always_xy=True,
+    )
+
+    # Generate destination pixel-centre coordinates.
+    columns, rows = np.meshgrid(
+        np.arange(width, dtype=np.float64) + 0.5,
+        np.arange(height, dtype=np.float64) + 0.5,
+    )
+
+    u = columns / width
+    v = rows / height
+
+    # Bilinear interpolation between all four projected corners.
+    #
+    # Top edge:    a -> b
+    # Bottom edge: d -> c
+    #
+    # Left edge:   a -> d
+    # Right edge:  b -> c
+
+    top_x = (1 - u) * a[0] + u * b[0]
+    top_y = (1 - u) * a[1] + u * b[1]
+
+    bottom_x = (1 - u) * d[0] + u * c[0]
+    bottom_y = (1 - u) * d[1] + u * c[1]
+
+    destination_x = (1 - v) * top_x + v * bottom_x
+    destination_y = (1 - v) * top_y + v * bottom_y
+
+    # Convert destination coordinates into the source raster CRS.
+    source_x, source_y = transformer.transform(
+        destination_x,
+        destination_y,
+    )
+
+    # Convert map coordinates to source raster pixel coordinates.
+    inverse_transform = ~source_transform
+
+    source_columns = (
+        inverse_transform.a * source_x
+        + inverse_transform.b * source_y
+        + inverse_transform.c
+        - 0.5
+    )
+
+    source_rows = (
+        inverse_transform.d * source_x
+        + inverse_transform.e * source_y
+        + inverse_transform.f
+        - 0.5
+    )
+
+    # Interpolate source elevation values.
+    source_data = np.asarray(
+        source.filled(0),
+        dtype=np.float32,
+    )
+
+    valid_data = (~np.ma.getmaskarray(source)).astype(np.float32)
+
+    coordinates = np.array([
+        source_rows,
+        source_columns,
+    ])
+
+    interpolated_values = map_coordinates(
+        source_data * valid_data,
+        coordinates,
+        order=1,
+        mode='constant',
+        cval=0,
+        prefilter=False,
+    )
+
+    interpolated_weights = map_coordinates(
+        valid_data,
+        coordinates,
+        order=1,
+        mode='constant',
+        cval=0,
+        prefilter=False,
+    )
+
+    # Avoid allowing nodata pixels to contaminate valid elevations.
+    output_nodata = -9999.0
+
+    output = np.full(
+        (height, width),
+        output_nodata,
+        dtype=np.float32,
+    )
+
+    valid_output = interpolated_weights > 0.5
+
+    output[valid_output] = (
+        interpolated_values[valid_output]
+        / interpolated_weights[valid_output]
+    )
+
+    # Retain an approximate affine transform for the output raster's
+    # metadata. The actual four-corner geometry is represented by the
+    # bilinear warp, not by this affine transform.
+    output_transform = _make_destination_transform(
+        corners,
+        width,
+        height,
+        dst_crs,
+    )
+
+    output_profile = source_profile.copy()
+
+    output_profile.update(
+        driver='GTiff',
+        width=width,
+        height=height,
+        count=1,
+        dtype='float32',
+        nodata=output_nodata,
+        crs=dst_crs,
+        transform=output_transform,
+    )
+
+    output_memfile = MemoryFile()
+
+    with output_memfile.open(**output_profile) as destination:
+        destination.write(output, 1)
+
+    return output_memfile
+
 
 def bother(
     outfile,
@@ -425,19 +611,22 @@ def bother(
 
     **corners** : *list*, optional
         Four WGS84 coordinate pairs in (latitude, longitude) order:
-
+    
             [
                 (top_left),
                 (top_right),
                 (bottom_right),
                 (bottom_left)
             ]
+    
+        The four points must define a valid convex quadrilateral.
+        They do not need to form a perfect rectangle.
+    
+        When scale_image is supplied, the elevation raster is warped
+        to fit the requested output dimensions using all four corners.
+        The geographic aspect ratio does not need to match the
+        output raster aspect ratio.
 
-        The four points must form a rectangle. The rectangle may have any
-        geographic orientation.
-
-        When scale_image is supplied, its width/height ratio must match the
-        physical aspect ratio of the supplied rectangle.
 
     **outfile_tif** : *str, path*
         Path to output tif file.
@@ -567,15 +756,12 @@ def bother(
     if corners is not None:
         if scale_image is None:
             error(
-                'corners requires scale_image so that the requested '
-                'game-grid aspect ratio can be enforced.'
+                'corners requires scale_image to specify the output '
+                'raster dimensions.'
             )
 
-        normalized_corners = _validate_corners(
-            corners,
-            map_width=map_width,
-            map_height=map_height,
-        )
+        normalized_corners = _validate_corners(corners)
+
 
     elif bounds is not None:
         # -------------------------------------------------------------------
@@ -753,19 +939,12 @@ def bother(
         # -------------------------------------------------------------------
 
         if normalized_corners is not None and scale_image:
-            destination_transform = _make_destination_transform(
-                normalized_corners,
-                map_width,
-                map_height,
-                destination_crs,
-            )
-
-            memfile = reproject_raster(
-                memfile,
+            memfile = _warp_quadrilateral_raster(
+                memfile=memfile,
+                corners=normalized_corners,
+                width=map_width,
+                height=map_height,
                 dst_crs=destination_crs,
-                dst_transform=destination_transform,
-                dst_width=map_width,
-                dst_height=map_height,
             )
 
         elif (
