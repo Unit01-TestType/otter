@@ -100,7 +100,7 @@ and I know there is still a lot of work to be done. Feedback, testing, and contr
 
 ### Other Recent Map-Making Developments
 
-*OpenTTD Heightmap Generator*: Zyliety recently released a web-based GUI that uses Bother to create heightmaps. The GUI also queries
+**OpenTTD Heightmap Generator**: Zyliety recently released a web-based GUI that uses Bother to create heightmaps. The GUI also queries
 OSM data to gather cities and towns within the bounding box to import as JSON into OTTD.
 
 https://github.com/zyliety/OpenTTD-Heightmap-Generator 
@@ -111,25 +111,25 @@ https://github.com/zyliety/OpenTTD-Heightmap-Generator
 
 Otter provides tools to:
 
-- *Generate Heightmaps:* Otter utilizes [Bother](https://github.com/bunburya/bother) to Download and 
+- **Generate Heightmaps:** Otter utilizes [Bother](https://github.com/bunburya/bother) to Download and 
 process real-world SRTM elevation data into OpenTTD compatible formats while retaining original geospatial
 boundaries.
 
-- *Work with geospatial data:* Create georeferenced rasters and GIS data to easily modify terrain elevations,
+- **Work with geospatial data:** Create georeferenced rasters and GIS data to easily modify terrain elevations,
 add waterways, and prepare map features.
 
-- *Collect real-world town data:* Otter has built-in integration with OpenStreetMap API to quickly acquire names, locations,
+- **Collect real-world town data:** Otter has built-in integration with OpenStreetMap API to quickly acquire names, locations,
 and coordinates of real-world cities and towns within your area of interest.
 
-- *Prepare town data:* Convert real-world town coordinates into OpenTTD game-grid coordinates and generate 
+- **Prepare town data:** Convert real-world town coordinates into OpenTTD game-grid coordinates and generate 
 a JSON files compatible with OpenTTD's new town-data import feature.
 
--*Manage and place industries:* Take a map-first approach to plan out to plan exactly which industries to place
+- **Manage and place industries:** Take a map-first approach to plan out to plan exactly which industries to place
 and where they should be placed on the map. Industries placed in the game automatically and precisely 
 using an OpenTTD GameScript. Save the location coordinates to easily reuse them for different maps. No more placing by hand 
 or rebuilding from scratch! 
 
--*Place other geographic features:* Otter also helps add signs and canals give that extra flare to your scenario. Support
+- **Place other geographic features:** Otter also helps add signs and canals give that extra flare to your scenario. Support
 for additional feature may be added in the future.
 
 ### Customize Your workflow
@@ -152,7 +152,7 @@ Since OpenTTD 15.0, you can now import town locations in the Scenario Builder us
 support this workflow by helping users transform real-world town coordinates into the game-grid
 coordinates needed for the JSON input file.
 
-Otter also provides a solution to another key piece of scenario creation: *industry placement*. Otter
+Otter also provides a solution to another key piece of scenario creation: **industry placement**. Otter
 can also use real-world coordinates to automatically place industries onto the game map exactly where you want them go.
 Given coordinates and the industry type, Otter will prepare a GameScript that will construct industries
 when initializing your scenario. The same approach can be used to place signs and canals to give your map
