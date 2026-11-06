@@ -10,8 +10,6 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-
-
 # **otter** -- **O**pen**TT**d map mak**ER** tools
 ## A Python toolkit for customizable, real-world OpenTTD map and scenario creation.
 
