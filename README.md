@@ -52,8 +52,8 @@
 
 Otter (OpenTTD map makER) is a Python toolkit for creating customized, real-world maps and scenarios for OpenTTD.
 It provides a collection of tools for building flexible map-making workflows using Python and GIS. Otter is designed
-around a GIS-first workflow integrated with Python to give users the most control over how geogrpahic data is collected,
-processed, transformed, and ultimatley incorporated into an OpenTTD map.
+around a GIS-first workflow integrated with Python to give users the most control over how geographic data is collected,
+processed, transformed, and ultimately incorporated into an OpenTTD map.
 
 This approach makes map-making workflows easier to customize, document, revise, and reproduce. Otter gives users flexibility 
 in their workflows by seamlessly integrating common data and GIS formats at any step in the process. GIS knowledge is not 
@@ -62,9 +62,9 @@ Otter's advanced capabilities.
 
 ### Motivation
 
-Otter was concieved after countless hours of searching old forum posts for information
+Otter was conceived after countless hours of searching old forum posts for information
 about creating custom maps for OpenTTD. Unfortunately, I found that many of the methods and tools were 
-overly cumbersom, outdated, or simply no longer available.
+overly cumbersome, outdated, or simply no longer available.
 
 This project was inspired by ideas and concepts from previous attempts at custom map and terrain generation:
 
@@ -89,19 +89,19 @@ is locked behind non-indexable platforms such as the OpenTTD Discord server. For
 I wanted to make otter as accessible as possible for the OpenTTD community and provide this repository as a place
 to compile additional resources for custom map and scenario development to avoid "reinventing the wheel".
 
-Otter builds on exsiting OpenTTD map-making tools and ideas, particularly [Bother](https://github.com/bunburya/bother) by Bunburya.
+Otter builds on existing OpenTTD map-making tools and ideas, particularly [Bother](https://github.com/bunburya/bother) by Bunburya.
 Otter can also compliment newer graphical tools for generating heightmaps and importing geographic data. Otter focuses
-on users who want the flexbility of a Python-based workflow, the precision of GIS, and greater control over the 
+on users who want the flexibility of a Python-based workflow, the precision of GIS, and greater control over the 
 preparation and placement of map features.
 
-Otter is stil evolving project born of my passion for OpenTTD and geospatial analysis. I am not a professional developer
+Otter is still evolving project born of my passion for OpenTTD and geospatial analysis. I am not a professional developer
 and I know there is still a lot of work to be done. Feedback, testing, and contribution are greatly welcomed, and encouraged!
 
 
 ### Other Recent Map-Making Developments
 
 *OpenTTD Heightmap Generator*: Zyliety recently released a web-based GUI that uses Bother to create heightmaps. The GUI also queries
-OSM data to gather cities and towns within the bounding box to import as json into OTTD.
+OSM data to gather cities and towns within the bounding box to import as JSON into OTTD.
 
 https://github.com/zyliety/OpenTTD-Heightmap-Generator 
 
@@ -126,7 +126,7 @@ a JSON files compatible with OpenTTD's new town-data import feature.
 
 -*Manage and place industries:* Take a map-first approach to plan out to plan exactly which industries to place
 and where they should be placed on the map. Industries placed in the game automatically and precisely 
-using an OpenTTD GameSript. Save the location coordinates to easily reuse them for different maps. No more placing by hand 
+using an OpenTTD GameScript. Save the location coordinates to easily reuse them for different maps. No more placing by hand 
 or rebuilding from scratch! 
 
 -*Place other geographic features:* Otter also helps add signs and canals give that extra flare to your scenario. Support
@@ -137,11 +137,11 @@ for additional feature may be added in the future.
 Otter is designed to compliment your existing workflows. Otter supports Excel, CSV, and Python formats
 such as lists and pandas dataframes. Otter also provides wide support for geospatial data in the form of
 shapefiles, rasters, GeoJOSN, and GeoDataFrames. Users can use Python and GIS libraries to collect,
-filter, edit, or generate their own geospatail data before passing it to Otter. This helps you
+filter, edit, or generate their own geospatial data before passing it to Otter. This helps you
 develop workflows tailored to your projects, needs, and workstyles. 
 
 Otter's modular Python and GIS ecosystem allows users to save, revise, and automate map-making
-steps. This is particularly useful for large maps, detaield real-world recreations, and projects
+steps. This is particularly useful for large maps, detailed real-world recreations, and projects
 that require substantial data preparation and repeated revisions. All of your data can be prepared and saved
 outside of OpenTTD worry-free. 
 
@@ -155,7 +155,7 @@ coordinates needed for the JSON input file.
 Otter also provides a solution to another key piece of scenario creation: *industry placement*. Otter
 can also use real-world coordinates to automatically place industries onto the game map exactly where you want them go.
 Given coordinates and the industry type, Otter will prepare a GameScript that will construct industries
-when intializing your scenario. The same approach can be used to place signs and canals to give your map
+when initializing your scenario. The same approach can be used to place signs and canals to give your map
 that extra bit of real-world flare.
 
 
