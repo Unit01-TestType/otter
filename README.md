@@ -11,12 +11,12 @@
 -->
 
 
-<!-- PROJECT LOGO -->
-![otter project logo of a otter and train curved around a globe, added in the Markdown.](assets/images/otter_logo_320x320.png)
-
 
 # **otter** -- **O**pen**TT**d map mak**ER** tools
 ## A Python toolkit for customizable, real-world OpenTTD map and scenario creation.
+
+<!-- PROJECT LOGO -->
+![otter project logo of a otter and train curved around a globe, added in the Markdown.](assets/images/otter_logo_320x320.png)
 
 <!-- TABLE OF CONTENTS -->
 <details>
