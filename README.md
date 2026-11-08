@@ -374,13 +374,17 @@ png_scale = '2048x4096'
 ## define the bounding box of the game grid
 ## the format is: latitude bottom left, longitude bottom left, latitude top right, longitude top right
 ## Note: corners refer to the corners of the intended game grid
-corners = [
-            (49.0001388888888840, -124.8155385698191395),  # top-left
-            (49.0001388888888840, -114.8155385698191395),  # top-right
-            (29.0001388888888840, -114.8155385698191395),  # bottom-right
-            (29.0001388888888840, -124.8155385698191395),  # bottom-left
-          ]
-otter.bother(corners=corners,
+WARNING: BOUNDING BOX FROM CORNERS (INCLUDING ROTATED BOUNDS) IS NOT WORKING CORRECTLY;
+CONTINUE TO USE THE ORIGINAL BOTHER BOUNDS ARUGMENT
+# corners = [
+#             (49.0001388888888840, -124.8155385698191395),  # top-left
+#             (49.0001388888888840, -114.8155385698191395),  # top-right
+#             (29.0001388888888840, -114.8155385698191395),  # bottom-right
+#             (29.0001388888888840, -124.8155385698191395),  # bottom-left
+#           ]
+
+otter.bother(bounds=[29.0001388888888840, -124.8155385698191395, 49.0001388888888840, -114.8155385698191395]
+            # corners=corners,
              outfile=png_path,
              outfile_tif=bother_tif,
              epsg='4326',
@@ -831,30 +835,50 @@ create_random_points(ras, # raster tif created by bother
 
 <!-- Known Issues -->
 ## Known Issues
+
+Terrain:
+- Affine transformations for rotated boundaries are currently an approximation and may not 
+produce the exact expected real-world overlap at the end. The approximation is currently close, but this will need more work.
+
+- Heightmap PNGs from otter.bother() may not properly overwrite an existing file is the 
+same path is used again.
+
+GameScript:
 - Even in Deity Mode, construction costs are still applied to Company 1 if the construction
 is done through a gamescript. The current solution is to add the maximum funds before construction
 and then reset the bank balance to the starting balance. However, this transaction
 is still reflected in the company finances for the first year after the scenario is saved and loaded.
+
 - Ownership of canal tiles are still assigned to Company 1 even when Deity Mode is used to place them.
 This can create issues when infrastructure maintenance is turned on.
 
 
 <!-- Future -->
-## Future
+## Roadmap
 
-Planned features and revisions:
 - **TEST FOR 16.x**
 - Create templates and methods for extracting tile information from existing saves/scenarios
     - extract list of towns with population, tile coordinates, and house and road layouts (tiles)
     - extract list of industry, nearest town, and tile coordinates
     - extract objects, signs, and other features
-- Creates templates and methods for extracting newGRF data into usable formats (not all newGRF data is publicly or easily available)
+- Create templates and methods for extracting newGRF data into usable formats (not all newGRF data is publicly or easily available)
 - Upload industry code references for common industry replacement sets
+    - FIRS 3
+    - FIRS 4
+    - FIRS 5
+    - NAIS - DONE
+    - XIS
+    - AXIS - DONE
 - Boundaries Generation:
     - output validation information
     - allow cardinal directions as inputs
     - add metadata to ouput shapefile
     - add interactive preview?
+- Water
+    - add support for individual buffer per feature
+- Terrain
+    - add option to automatically create backup copy of terrain files; good to save backup in mistakes are make during editing
+        - save backup before any land/water edits?
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
