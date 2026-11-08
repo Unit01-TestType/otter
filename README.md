@@ -374,23 +374,26 @@ png_scale = '2048x4096'
 ## define the bounding box of the game grid
 ## the format is: latitude bottom left, longitude bottom left, latitude top right, longitude top right
 ## Note: corners refer to the corners of the intended game grid
-WARNING: BOUNDING BOX FROM CORNERS (INCLUDING ROTATED BOUNDS) IS NOT WORKING CORRECTLY;
-CONTINUE TO USE THE ORIGINAL BOTHER BOUNDS ARUGMENT
-# corners = [
-#             (49.0001388888888840, -124.8155385698191395),  # top-left
-#             (49.0001388888888840, -114.8155385698191395),  # top-right
-#             (29.0001388888888840, -114.8155385698191395),  # bottom-right
-#             (29.0001388888888840, -124.8155385698191395),  # bottom-left
-#           ]
+corners = [
+            (49.0001388888888840, -124.8155385698191395),  # top-left
+            (49.0001388888888840, -114.8155385698191395),  # top-right
+            (29.0001388888888840, -114.8155385698191395),  # bottom-right
+            (29.0001388888888840, -124.8155385698191395),  # bottom-left
+          ]
 
-otter.bother(bounds=[29.0001388888888840, -124.8155385698191395, 49.0001388888888840, -114.8155385698191395]
-            # corners=corners,
+## Alternatively, you could use the original --bounds format from Bother
+## Note: this works best with north-oriented bounding boxes. Rotated boundaries may produced uninteded results.
+bounds=[29.0001388888888840, -124.8155385698191395, 49.0001388888888840, -114.8155385698191395]
+
+otter.bother(# bounds=bounds
+             corners=corners,
              outfile=png_path,
              outfile_tif=bother_tif,
              epsg='4326',
              raise_undersea=True,
              raise_low=True,
-             scale_image=png_scale)
+             scale_image=png_scale,
+             clear_cache=True)
 ```
     
 2. Convert the scaled PNG to a georeferenced GeoTIFF file.
@@ -837,10 +840,13 @@ create_random_points(ras, # raster tif created by bother
 ## Known Issues
 
 Terrain:
-- Affine transformations for rotated boundaries are currently an approximation and may not 
-produce the exact expected real-world overlap at the end. The approximation is currently close, but this will need more work.
+- When using "corners" and boundaries rotated (e.g. not north-oriented) may produce outputs
+that don't match the input boundaries exactly due to project approximations and extent-handling limitations. 
+However, the geographic output should still match very well with expected real-world data. It is recommended
+to review terrain outputs in GIS software to confirm actual output extents. North-oriented boundary rectangles
+still work very well with "corners" and should match the original Bother output.
 
-- Heightmap PNGs from otter.bother() may not properly overwrite an existing file is the 
+- Heightmap PNGs and GeoTIFFs from otter.bother() may not properly overwrite an existing file is the 
 same path is used again.
 
 GameScript:
@@ -857,6 +863,7 @@ This can create issues when infrastructure maintenance is turned on.
 ## Roadmap
 
 - **TEST FOR 16.x**
+- Improve support for custom coordinate reference systems and projections rather than enfocing WGS84. 
 - Create templates and methods for extracting tile information from existing saves/scenarios
     - extract list of towns with population, tile coordinates, and house and road layouts (tiles)
     - extract list of industry, nearest town, and tile coordinates
