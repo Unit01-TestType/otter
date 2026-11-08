@@ -2,10 +2,7 @@
 This script contains an adaptation of bother by bunburya for to work with otter to retrieve terrain data
 and create a png and tif raster for the heightmap.
 
-NOTE: TRANSFORMATION USE WEB MERCATOR WHEN DEALING WITH ROTATED BOUDNARIES WHICH CAN ONLY BE
-APPROXIMATELY TRANSFORMED BACK TO WGS84
-
-This was heavily modified using AI to add support for rotated boundaries.
+This was heavily modified using ChatGPT to add support for rotated boundaries.
 
 bother: https://github.com/bunburya/bother/tree/master
 
@@ -46,13 +43,14 @@ from typing import Optional, Set, Tuple, List
 
 from PIL import Image
 from rasterio.io import MemoryFile
+import rasterio
 
 from pyproj import CRS, Geod, Transformer
 from pyproj.exceptions import CRSError
 
 from affine import Affine
 
-from otter.bother_utils.srtm import create_tif_file, clear_cache
+from otter.bother_utils.srtm import create_tif_file#, clear_cache
 from otter.bother_utils.heightmap import (
     remove_sea,
     resample,
@@ -387,6 +385,7 @@ def _make_destination_transform(corners, width, height, dst_crs):
 
 
 
+
 def _warp_quadrilateral_raster(
     memfile,
     corners,
@@ -395,62 +394,71 @@ def _warp_quadrilateral_raster(
     dst_crs,
 ):
     """
-    Warp an elevation raster to a four-corner destination grid.
+    Warp an elevation raster onto an affine destination grid defined by
+    four corners in map-grid order: TL, TR, BR, BL.
 
-    The interior of the requested boundary is defined in Web Mercator
-    (EPSG:3857), using bilinear interpolation between the four supplied
-    corners.
+    The destination affine transform is used both to determine the
+    geographic coordinates of output pixel centers and to georeference
+    the resulting raster.
 
-    Corner order:
-        top-left, top-right, bottom-right, bottom-left
+    The affine grid is constructed from TL, TR and BL. The discrepancy
+    between its predicted BR and the supplied BR is measured and reported.
 
-    Output positions are sampled at pixel centers. Source raster
-    coordinates are converted from pixel-edge coordinates to
-    pixel-center array indices before interpolation.
+    Parameters
+    ----------
+    memfile : rasterio.io.MemoryFile
+        Source elevation raster.
+    corners : list
+        Four (latitude, longitude) pairs in TL, TR, BR, BL order.
+    width, height : int
+        Destination raster dimensions.
+    dst_crs : str or CRS
+        Destination coordinate reference system.
+
+    Returns
+    -------
+    rasterio.io.MemoryFile
+        Warped elevation raster.
     """
 
-    # ---------------------------------------------------------------
-    # Validate and prepare coordinates.
-    # ---------------------------------------------------------------
+    import warnings
+    from pyproj import Transformer, Geod
+    from scipy.ndimage import map_coordinates
+    from rasterio.io import MemoryFile
+    from affine import Affine
 
     if width <= 0 or height <= 0:
-        raise ValueError("Output raster dimensions must be positive.")
+        raise ValueError("Raster dimensions must be greater than zero.")
 
     if len(corners) != 4:
         raise ValueError("Exactly four corners are required.")
 
-    # Input coordinates are (latitude, longitude).
     latitudes = np.asarray(
         [point[0] for point in corners],
         dtype=np.float64,
     )
-
     longitudes = np.asarray(
         [point[1] for point in corners],
         dtype=np.float64,
     )
 
-    # Web Mercator is undefined at the poles.
-    max_mercator_lat = 85.0511287798066
+    if not np.all(np.isfinite(latitudes)) or not np.all(
+        np.isfinite(longitudes)
+    ):
+        raise ValueError("Corner coordinates must be finite.")
 
-    if np.any(np.abs(latitudes) > max_mercator_lat):
-        raise ValueError(
-            "Corner latitudes must be between "
-            "-85.05112878 and 85.05112878 degrees "
-            "for Web Mercator transformation."
-        )
+    if np.any(np.abs(latitudes) > 90):
+        raise ValueError("Invalid latitude values.")
 
-    # ---------------------------------------------------------------
-    # Project the four corners into Web Mercator.
-    # ---------------------------------------------------------------
+    # Transform the four corners into the requested destination CRS.
 
-    wgs84_to_mercator = Transformer.from_crs(
+    wgs84_to_destination = Transformer.from_crs(
         "EPSG:4326",
-        "EPSG:3857",
+        dst_crs,
         always_xy=True,
     )
 
-    corner_x, corner_y = wgs84_to_mercator.transform(
+    corner_x, corner_y = wgs84_to_destination.transform(
         longitudes,
         latitudes,
     )
@@ -458,54 +466,83 @@ def _warp_quadrilateral_raster(
     tl_x, tr_x, br_x, bl_x = corner_x
     tl_y, tr_y, br_y, bl_y = corner_y
 
-    # ---------------------------------------------------------------
-    # Generate output pixel-center coordinates.
+    # Construct the destination affine transform.
     #
-    # Each pixel center is represented by normalized coordinates
-    # between 0 and 1 across the requested quadrilateral.
-    # ---------------------------------------------------------------
+    # This defines the actual destination grid. Both sampling and output
+    # georeferencing will use this exact transform.
 
-    u = (
-        np.arange(width, dtype=np.float64) + 0.5
-    ) / width
-
-    v = (
-        np.arange(height, dtype=np.float64) + 0.5
-    ) / height
-
-    uu, vv = np.meshgrid(u, v)
-
-    # ---------------------------------------------------------------
-    # Bilinear interpolation across all four corners.
-    #
-    # For a parallelogram, this reduces to an affine transformation.
-    # For a general convex quadrilateral, it preserves all four
-    # supplied corner positions.
-    # ---------------------------------------------------------------
-
-    mercator_x = (
-        (1 - uu) * (1 - vv) * tl_x
-        + uu * (1 - vv) * tr_x
-        + uu * vv * br_x
-        + (1 - uu) * vv * bl_x
+    destination_transform = Affine(
+        (tr_x - tl_x) / width,
+        (bl_x - tl_x) / height,
+        tl_x,
+        (tr_y - tl_y) / width,
+        (bl_y - tl_y) / height,
+        tl_y,
     )
 
-    mercator_y = (
-        (1 - uu) * (1 - vv) * tl_y
-        + uu * (1 - vv) * tr_y
-        + uu * vv * br_y
-        + (1 - uu) * vv * bl_y
+    # Check whether the supplied bottom-right corner agrees with the
+    # parallelogram represented by the affine transform.
+
+    predicted_br_x, predicted_br_y = destination_transform * (
+        width,
+        height,
     )
 
-    # ---------------------------------------------------------------
-    # Transform destination positions into the source raster CRS.
-    # ---------------------------------------------------------------
+    destination_to_wgs84 = Transformer.from_crs(
+        dst_crs,
+        "EPSG:4326",
+        always_xy=True,
+    )
+
+    actual_br_lon, actual_br_lat = destination_to_wgs84.transform(
+        br_x,
+        br_y,
+    )
+
+    predicted_br_lon, predicted_br_lat = destination_to_wgs84.transform(
+        predicted_br_x,
+        predicted_br_y,
+    )
+
+    geod = Geod(ellps="WGS84")
+
+    _, _, br_error_m = geod.inv(
+        actual_br_lon,
+        actual_br_lat,
+        predicted_br_lon,
+        predicted_br_lat,
+    )
+
+    if br_error_m > 1.0:
+        warnings.warn(
+            "The supplied bottom-right corner does not exactly agree "
+            "with the destination affine grid. "
+            f"Discrepancy: {br_error_m:.3f} metres. "
+            "The output raster will follow the affine grid defined by "
+            "the other three corners.",
+            UserWarning,
+        )
+
+    # Generate destination pixel-center coordinates using the affine
+    # transform that will be written to the output raster.
+
+    cols, rows = np.meshgrid(
+        np.arange(width, dtype=np.float64) + 0.5,
+        np.arange(height, dtype=np.float64) + 0.5,
+    )
+
+    destination_x, destination_y = destination_transform * (
+        cols,
+        rows,
+    )
+
+    # Convert destination coordinates into the source raster CRS.
 
     with memfile.open() as src:
 
         if src.crs is None:
             raise ValueError(
-                "Source elevation raster has no defined CRS."
+                "Source raster does not contain a CRS."
             )
 
         source_data = src.read(1).astype(np.float32)
@@ -514,24 +551,18 @@ def _warp_quadrilateral_raster(
         source_crs = src.crs
         source_nodata = src.nodata
 
-        mercator_to_source = Transformer.from_crs(
-            "EPSG:3857",
+        destination_to_source = Transformer.from_crs(
+            dst_crs,
             source_crs,
             always_xy=True,
         )
 
-        source_x, source_y = mercator_to_source.transform(
-            mercator_x,
-            mercator_y,
+        source_x, source_y = destination_to_source.transform(
+            destination_x,
+            destination_y,
         )
 
-        # -----------------------------------------------------------
-        # Convert map coordinates into source raster coordinates.
-        #
-        # The inverse affine transform returns coordinates measured
-        # from the upper-left pixel corner. SciPy array indices refer
-        # to pixel centers, so subtract 0.5 from each coordinate.
-        # -----------------------------------------------------------
+        # Convert map coordinates into source pixel-center indices.
 
         inverse_transform = ~source_transform
 
@@ -540,65 +571,77 @@ def _warp_quadrilateral_raster(
             source_y,
         )
 
-        source_cols = source_cols - 0.5
-        source_rows = source_rows - 0.5
+        source_cols -= 0.5
+        source_rows -= 0.5
 
-        # -----------------------------------------------------------
-        # Bilinear elevation sampling.
-        # -----------------------------------------------------------
+        # Identify valid source elevation pixels.
 
-        if source_nodata is None:
-            cval = np.nan
-        else:
-            cval = float(source_nodata)
+        valid = np.isfinite(source_data)
 
-        warped_data = map_coordinates(
-            source_data,
-            [
-                source_rows.ravel(),
-                source_cols.ravel(),
-            ],
+        if source_nodata is not None:
+            if np.isnan(source_nodata):
+                valid &= np.isfinite(source_data)
+            else:
+                valid &= source_data != source_nodata
+
+        # Interpolate valid values and their validity weights separately.
+        #
+        # This prevents nodata values from contaminating valid elevations
+        # during bilinear interpolation.
+
+        valid_data = np.where(valid, source_data, 0.0).astype(
+            np.float32
+        )
+
+        valid_weights = valid.astype(np.float32)
+
+        coordinates = [
+            source_rows.ravel(),
+            source_cols.ravel(),
+        ]
+
+        sampled_values = map_coordinates(
+            valid_data,
+            coordinates,
             order=1,
             mode="constant",
-            cval=cval,
+            cval=0.0,
             prefilter=False,
         ).reshape((height, width))
 
-        # -----------------------------------------------------------
-        # Construct destination raster georeferencing.
-        #
-        # An affine transform can represent the exact grid when the
-        # destination corners form a parallelogram in dst_crs.
-        # For a general quadrilateral, it is an approximation; the
-        # sampled elevation values above still use all four corners.
-        # -----------------------------------------------------------
+        sampled_weights = map_coordinates(
+            valid_weights,
+            coordinates,
+            order=1,
+            mode="constant",
+            cval=0.0,
+            prefilter=False,
+        ).reshape((height, width))
 
-        wgs84_to_destination = Transformer.from_crs(
-            "EPSG:4326",
-            dst_crs,
-            always_xy=True,
+        # Restore nodata wherever no valid source data contributed.
+
+        output_nodata = (
+            source_nodata
+            if source_nodata is not None
+            else np.nan
         )
 
-        dst_x, dst_y = wgs84_to_destination.transform(
-            longitudes,
-            latitudes,
+        warped_data = np.full(
+            (height, width),
+            output_nodata,
+            dtype=np.float32,
         )
 
-        dst_tl_x, dst_tr_x, _, dst_bl_x = dst_x
-        dst_tl_y, dst_tr_y, _, dst_bl_y = dst_y
+        valid_output = sampled_weights > 1e-6
 
-        destination_transform = Affine(
-            (dst_tr_x - dst_tl_x) / width,
-            (dst_bl_x - dst_tl_x) / height,
-            dst_tl_x,
-            (dst_tr_y - dst_tl_y) / width,
-            (dst_bl_y - dst_tl_y) / height,
-            dst_tl_y,
+        np.divide(
+            sampled_values,
+            sampled_weights,
+            out=warped_data,
+            where=valid_output,
         )
 
-        # -----------------------------------------------------------
-        # Write the warped raster into a new in-memory GeoTIFF.
-        # -----------------------------------------------------------
+        # Prepare output raster metadata.
 
         profile = src.profile.copy()
 
@@ -610,15 +653,18 @@ def _warp_quadrilateral_raster(
             dtype="float32",
             crs=dst_crs,
             transform=destination_transform,
-            nodata=source_nodata,
+            nodata=output_nodata,
         )
+
+    # Write the resulting raster.
 
     output_memfile = MemoryFile()
 
     with output_memfile.open(**profile) as dst:
-        dst.write(warped_data.astype(np.float32), 1)
+        dst.write(warped_data, 1)
 
     return output_memfile
+
 
 
 
@@ -638,6 +684,7 @@ def bother(
     infile_png=None,
     crop=None,
     scale_image=None,
+    clear_cache=True,
 ):
     '''
     Run bother to download SRTM elevation data.
@@ -648,7 +695,7 @@ def bother(
         The file to which the greyscale PNG image will be written.
 
     **bounds** : *list, GeoDataFrame, str, path*, optional
-        Legacy axis-aligned bounding box.
+        Axis-aligned bounding box based on the original Bother --bounds argument.
 
         List format:
             [latitude_bottom, longitude_left,
@@ -714,6 +761,11 @@ def bother(
 
     **scale_image** : *str, optional*
         Scale resulting image to WIDTHxHEIGHT.
+        
+    **clear_cache** : *boolean, optional*
+        If True, clear the local Bother SRTM data cashe after running.
+        Keeping the cache will reuse SRTM datasets for future runs rather than downloading
+        the files for each run for the same overlapping area.
 
     Returns
     -------
@@ -826,26 +878,26 @@ def bother(
 
     elif bounds is not None:
         # -------------------------------------------------------------------
-        # LEGACY COMPATIBILITY:
+        # LEGACY BOTHER --BOUNDS COMPATIBILITY:
         # Keep bounds for now, but explicitly warn that it is going away and
         # only reliably describes north-oriented boxes.
         # -------------------------------------------------------------------
 
         warnings.warn(
-            'bounds is deprecated and will be removed in a future version. '
-            'Use corners instead. bounds only supports north-oriented '
+            # 'bounds is deprecated and will be removed in a future version. '
+            'bounds generally works best with north-oriented '
             'axis-aligned bounding boxes; rotated or otherwise non-axis-'
             'aligned bounds may produce unintended results.',
             DeprecationWarning,
             stacklevel=2,
         )
 
+        # print(
+        #     'WARNING: bounds is deprecated and will be removed in a future '
+        #     'version. Use corners instead.'
+        # )
         print(
-            'WARNING: bounds is deprecated and will be removed in a future '
-            'version. Use corners instead.'
-        )
-        print(
-            'WARNING: bounds requires a north-oriented, axis-aligned '
+            'WARNING: bounds works best with a north-oriented, axis-aligned '
             'bounding box to work properly. Rotated or otherwise '
             'non-axis-aligned bounds may produce unintended results.'
         )
@@ -979,6 +1031,7 @@ def bother(
             normalized_corners
         )
     
+            
         tif_file = create_tif_file(
             left,
             bottom,
@@ -986,6 +1039,23 @@ def bother(
             top,
             to_file,
         )
+        
+        #### DEBUG TEMP
+        with rasterio.open(tif_file) as src:
+            print("\nSOURCE DEM")
+            print("CRS:", src.crs)
+            print("Bounds:", src.bounds)
+            print("Transform:", src.transform)
+            print("Dimensions:", src.width, src.height)
+            print("Resolution:", src.res)
+            print("Min/max:", src.read(1).min(), src.read(1).max())
+        
+        print("\nNORMALIZED CORNERS:")
+        for corner in normalized_corners:
+            print(corner)
+        
+        print("\nDESTINATION CRS:", destination_crs)
+        print("MAP DIMENSIONS:", map_width, map_height)
     
     else:
         tif_file = infile_tif
@@ -1021,6 +1091,16 @@ def bother(
                 height=map_height,
                 dst_crs=destination_crs,
             )
+            
+            ### DEBUG TEMP
+            # with memfile.open() as src:
+            #     print("\nWARPED TIFF")
+            #     print("CRS:", src.crs)
+            #     print("Bounds:", src.bounds)
+            #     print("Transform:", src.transform)
+            #     print("Dimensions:", src.width, src.height)
+            #     print("Resolution:", src.res)
+            #     print("Min/max:", src.read(1).min(), src.read(1).max())
 
         elif (
             epsg
@@ -1089,7 +1169,7 @@ def bother(
 
     # Existing behavior for non-corners workflows.
     if scale_image and not use_corner_warp:
-        print("[DEBUG] Using legacy PNG scaling")
+        # print("[DEBUG] Using legacy PNG scaling")
         im = scale_image_f(
             im,
             map_width,
